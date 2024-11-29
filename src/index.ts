@@ -4,8 +4,16 @@ function main() {
     const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
     const context = canvas.getContext('2d')!;
     const inputs = [
-        new TextInput(200, 300, 74, 8, 13, canvas, context),
-        new TextInput(200, 500, 300, -1, 30, canvas, context)
+        new TextInput({ maxLength: 8, bounds: { x: 200, y: 300, w: 74 } }, canvas),
+        new TextInput({ fontSize: 30, bounds: { x: 200, y: 500, w: 300 }, 
+            fontColor: 'blue',
+            selectionFontColor: 'white',
+            cursorColor: 'red',
+            selectionColor: 'rgba(0, 0, 106, 1)',
+            boxColor: 'black',
+            focusBoxColor: 'grey',
+            underlineColor: 'grey'
+        }, canvas)
     ];
 
     let lastTime = 0;
@@ -42,7 +50,38 @@ class Vec2 {
 
 class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
-    private static CURSOR_X_OFFSET = 3;
+    private static defaultSettings = {
+        fontColor: 'black',
+        selectionFontColor: 'black',
+        cursorColor: 'black',
+        selectionColor: '#F5C4C6',
+        boxColor: '#767676',
+        focusBoxColor: '#E1797C',
+        underlineColor: '#E1797C', 
+        fontSize: 13,
+        maxLength: -1,
+        caretBlinkRate: 0.5,
+        defaultValue: '',
+        bounds: {
+            x: 0,
+            y: 0,
+            w: 100
+        },
+        padding: {
+            top: 1,
+            left: 1,
+            right: 1,
+            bottom: 2
+        },
+        border: {
+            top: 1,
+            left: 1,
+            right: 1,
+            bottom: 1
+        },
+        enterCallback: (event: KeyboardEvent) => {},
+        hoverCallback: (inOut: boolean) => {}
+    };
     
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
@@ -50,25 +89,21 @@ class TextInput {
     private selection: [number, number]; // 선택 [시작, 끝] 위치
     private isFocused: boolean; // 포커스 여부
     private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
-    private position: Vec2; // 위치
-    private size: Vec2; // 크기
     private blinkTimer: number; // 커서 깜빡임 타이머
     private maxLength: number; // 최대 글자 (-1인 경우 무한)
-    private fontSize: number; // 폰트 크기
     private assemblePos: number; // 조합중인 한글 위치
     private startPos: number; // 텍스트내 보여줄 시작 위치
+    private settings: typeof TextInput.defaultSettings;
 
-    constructor(x: number, y: number, w: number, maxLength: number, fontSize: number, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
+    constructor(settings: Partial<typeof TextInput.defaultSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas;
-        this.context = context;
-        this.value = '';
+        this.context = canvas.getContext('2d');
+        this.settings = Object.assign({}, TextInput.defaultSettings, settings);
+        this.value = this.settings.defaultValue;
         this.selection = [0, 0];
         this.isFocused = false;
-        this.position = new Vec2(x, y);
-        this.fontSize = fontSize;
-        this.size = new Vec2(w, this.fontSize + 4);
         this.blinkTimer = 0;
-        this.maxLength = maxLength;
+        this.maxLength = this.settings.maxLength;
         this.resetSelectionPos();
         this.resetAssembleMode();
         this.startPos = 0;
@@ -83,45 +118,54 @@ class TextInput {
         this.canvas.addEventListener('cut', this.onCut.bind(this));
     }
 
+    private getStartX(): number {
+        return this.settings.bounds.x + this.settings.padding.left + this.settings.border.left;
+    }
+
+    private getStartY(): number {
+        return this.settings.bounds.y + this.settings.padding.top + this.settings.border.top;
+    }
+
     draw() {
-        this.context.font = `${this.fontSize}px monospace`;
+        this.context.font = `${this.settings.fontSize}px monospace`;
         this.context.textAlign = 'left';
         this.context.textBaseline = 'middle';
-        this.context.fillStyle = 'black';
 
-        const x = this.position.x + TextInput.CURSOR_X_OFFSET;
-        const y = this.position.y + 3;
+        const x = this.getStartX();
+        const y = this.getStartY();
+        const area = this.area();
 
         this.context.save();
         this.context.beginPath();
-        this.context.rect(this.position.x, this.position.y, this.size.x + 1, this.size.y + 1);
+        this.context.rect(area.x, area.y, area.w + 1, area.h + 1);
         this.context.clip();
         
         if (this.isFocused) {
             if (this.isSelected()) {
                 const selectOffset = this.measureText(this.value.substring(0, this.selection[0]));
                 const selectWidth = this.measureText(this.getSelectionText());
-                this.context.fillStyle = '#F5C4C6';
-                this.context.fillRect(selectOffset + x, y, selectWidth, this.fontSize - 1);
+                this.context.fillStyle = this.settings.selectionColor;
+                this.context.fillRect(selectOffset + x, y, selectWidth, this.settings.fontSize - 1);
             } else {
                 if (this.cursorBlink()) {
                     const cursorOffset = this.measureText(this.value.substring(0, this.selection[0]));
-                    this.context.fillRect(cursorOffset + x, y, 1, this.fontSize);
+                    this.context.fillStyle = this.settings.cursorColor;
+                    this.context.fillRect(cursorOffset + x, y, 1, this.settings.fontSize);
                 }
             }
         }
 
-        const textY = Math.round(y + 1 + this.fontSize / 2);
+        const textY = Math.round(y + 1 + this.settings.fontSize / 2);
         const [before, after] = this.getSelectionOutside();
         const selectionText = this.value.substring(this.selection[0], this.selection[1]);
         // before
-        this.context.fillStyle = 'black';
+        this.context.fillStyle = this.settings.fontColor;
         this.context.fillText(before, x, textY);
         // selection
-        this.context.fillStyle = 'black';
+        this.context.fillStyle = this.settings.selectionFontColor;
         this.context.fillText(selectionText, x + this.measureText(before), textY);
         // after
-        this.context.fillStyle = 'black';
+        this.context.fillStyle = this.settings.fontColor;
         this.context.fillText(after, x + this.measureText(before + selectionText), textY);
 
         // draw underline to handle hangul assemble mode
@@ -129,15 +173,15 @@ class TextInput {
             this.drawUnderline(this.assemblePos);
         }
         
-        this.drawRect(this.position.x, this.position.y, this.size.x, this.size.y);
+        this.drawRect(area.x, area.y, area.w, area.h);
 
         this.context.restore();
     }
 
     private drawUnderline(pos: number) {
-        const x = this.position.x + TextInput.CURSOR_X_OFFSET;
-        const y = this.position.y + this.fontSize;
-        this.context.fillStyle = '#E1797C';
+        const x = this.getStartX();
+        const y = this.getStartY() + this.settings.fontSize - 2;
+        this.context.fillStyle = this.settings.underlineColor;
         const cursorOffset = this.measureText(this.value.substring(0, pos));
         const singleCharWidth = this.measureText(this.value.substring(pos, pos + 1));
         this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2);
@@ -156,7 +200,7 @@ class TextInput {
     }
 
     private measureText(text: string): number {
-        this.context.font = `${this.fontSize}px monospace`;
+        this.context.font = `${this.settings.fontSize}px monospace`;
         this.context.textAlign = 'left';
         this.context.textBaseline = 'middle';
         return this.context.measureText(text).width;
@@ -422,9 +466,9 @@ class TextInput {
 
         // TODO: startPos 이동 구현
         const totalWidth = this.measureText(this.value);
-        if (totalWidth > this.size.x) {
-            console.log('overflow!');
-        }
+        // if (totalWidth > this.size.x) {
+        //     console.log('overflow!');
+        // }
     }
 
     private onRemove(keyEvent: KeyboardEvent) {
@@ -440,11 +484,11 @@ class TextInput {
             return;
         }
 
-        if (this.isAssembleMode()) {
+        if (this.isAssembleMode() && !metaKey) {
             const before = this.getAssemblePosBefore();
             const disassembled = Hangul.d(this.getAssemblePosChar());
             const after = this.getAssemblePosAfter();
-            const sliced = disassembled.slice(0, metaKey ? this.value.length * -1 : -1);
+            const sliced = disassembled.slice(0, -1);
             const assembled = Hangul.a(sliced);
 
             if (assembled === '') {
@@ -513,7 +557,7 @@ class TextInput {
     }
 
     private textPos(x: number, y: number) {
-        const boundX = x - (this.position.x - TextInput.CURSOR_X_OFFSET);
+        const boundX = x - this.area().x;
         let totalWidth = 0;
         let pos = this.value.length;
 
@@ -654,36 +698,46 @@ class TextInput {
         }
     }
 
+    private area() {
+        return {
+            x: this.settings.bounds.x - this.settings.padding.left - this.settings.border.left,
+            y: this.settings.bounds.y - this.settings.padding.top - this.settings.border.top,
+            w: this.settings.bounds.w + this.settings.padding.right + this.settings.border.right,
+            h: this.settings.fontSize + 4 + this.settings.padding.bottom + this.settings.border.bottom
+        }
+    }
+
     private contains(x: number, y: number) {
-        return x >= this.position.x &&
-            x <= (this.position.x + this.size.x) &&
-            y >= this.position.y &&
-            y <= (this.position.y + this.size.y);
+        const area = this.area();
+        return x >= area.x &&
+            x <= (this.settings.bounds.x + area.w) &&
+            y >= area.y &&
+            y <= (this.settings.bounds.y + area.h);
     }
 
     private drawRect(x: number, y: number, w: number, h: number) {
         this.context.beginPath();
     
         const edge = 1;
-        this.context.strokeStyle = this.isFocused ? '#E1797C' : '#767676';
+        this.context.strokeStyle = this.isFocused ? this.settings.focusBoxColor : this.settings.boxColor;
 
         // left vertical line
-        this.context.lineWidth = this.isFocused ? 2 : 1;
+        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.left;
         this.context.moveTo(x + 0.5, y+ edge);
         this.context.lineTo(x + 0.5, y + h);
     
         // right vertical line
-        this.context.lineWidth = this.isFocused ? 2 : 1;
+        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.right;
         this.context.moveTo(x + w + 0.5, y+ edge);
         this.context.lineTo(x + w + 0.5, y + h);
     
         // top horizontal line
-        this.context.lineWidth = this.isFocused ? 2 : 1;
+        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.top;
         this.context.moveTo(x+ edge, y + 0.5);
         this.context.lineTo(x + w, y + 0.5);
     
         // bottom horizontal line
-        this.context.lineWidth = this.isFocused ? 2 : 1;
+        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.bottom;
         this.context.moveTo(x + edge, y + h + 0.5);
         this.context.lineTo(x + w, y + h + 0.5);
     
