@@ -5,7 +5,7 @@ function main() {
     const context = canvas.getContext('2d')!;
     const inputs = [
         new TextInput(200, 300, 74, 8, 13, canvas, context),
-        new TextInput(200, 500, 300, 15, 30, canvas, context)
+        new TextInput(200, 500, 300, -1, 30, canvas, context)
     ];
 
     let lastTime = 0;
@@ -43,18 +43,20 @@ class Vec2 {
 class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
     private static CURSOR_X_OFFSET = 3;
+    
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
-    private value: string;
-    private selection: [number, number];
-    private isFocused: boolean;
-    private selectionStart: number;
-    private position: Vec2;
-    private size: Vec2;
-    private blinkTimer: number;
-    private maxLength: number;
-    private fontSize: number;
-    private assemblePos: number;
+    private value: string; // 입력된 텍스트
+    private selection: [number, number]; // 선택 [시작, 끝] 위치
+    private isFocused: boolean; // 포커스 여부
+    private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
+    private position: Vec2; // 위치
+    private size: Vec2; // 크기
+    private blinkTimer: number; // 커서 깜빡임 타이머
+    private maxLength: number; // 최대 글자 (-1인 경우 무한)
+    private fontSize: number; // 폰트 크기
+    private assemblePos: number; // 조합중인 한글 위치
+    private startPos: number; // 텍스트내 보여줄 시작 위치
 
     constructor(x: number, y: number, w: number, maxLength: number, fontSize: number, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
         this.canvas = canvas;
@@ -62,13 +64,14 @@ class TextInput {
         this.value = '';
         this.selection = [0, 0];
         this.isFocused = false;
-        this.selectionStart = -1;
         this.position = new Vec2(x, y);
         this.fontSize = fontSize;
         this.size = new Vec2(w, this.fontSize + 4);
         this.blinkTimer = 0;
         this.maxLength = maxLength;
-        this.assemblePos = -1;
+        this.resetSelectionPos();
+        this.resetAssembleMode();
+        this.startPos = 0;
 
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true);
@@ -88,16 +91,20 @@ class TextInput {
 
         const x = this.position.x + TextInput.CURSOR_X_OFFSET;
         const y = this.position.y + 3;
+
+        this.context.save();
+        this.context.beginPath();
+        this.context.rect(this.position.x, this.position.y, this.size.x + 1, this.size.y + 1);
+        this.context.clip();
         
         if (this.isFocused) {
             if (this.isSelected()) {
                 const selectOffset = this.measureText(this.value.substring(0, this.selection[0]));
                 const selectWidth = this.measureText(this.getSelectionText());
-
                 this.context.fillStyle = '#F5C4C6';
                 this.context.fillRect(selectOffset + x, y, selectWidth, this.fontSize - 1);
             } else {
-                if (Math.floor(this.blinkTimer / 0.5) % 2) {
+                if (this.cursorBlink()) {
                     const cursorOffset = this.measureText(this.value.substring(0, this.selection[0]));
                     this.context.fillRect(cursorOffset + x, y, 1, this.fontSize);
                 }
@@ -122,6 +129,8 @@ class TextInput {
         }
         
         this.drawRect(this.position.x, this.position.y, this.size.x, this.size.y);
+
+        this.context.restore();
     }
 
     private drawUnderline(pos: number) {
@@ -141,11 +150,19 @@ class TextInput {
         this.value = text;
     }
 
-    private measureText(text: string) {
+    getText(): string {
+        return this.value;
+    }
+
+    private measureText(text: string): number {
         this.context.font = `${this.fontSize}px monospace`;
         this.context.textAlign = 'left';
         this.context.textBaseline = 'middle';
         return this.context.measureText(text).width;
+    }
+
+    private cursorBlink() {
+        return Math.floor(this.blinkTimer / 0.5) % 2;
     }
 
     private onCopy(event: ClipboardEvent) {
@@ -371,13 +388,19 @@ class TextInput {
             return;
         }
 
+        // prevent missing meta key code
         if (char.length > 1) {
             return;
         }
 
-        if (this.value.length < this.maxLength) {
+        if (!this.isMaxLengthOverflow()) {
             this.appendValue(char);   
         }
+    }
+
+    private isMaxLengthOverflow(): boolean {
+        if (this.maxLength === -1) return false;
+        return this.value.length >= this.maxLength;
     }
 
     private appendValue(value: string) {
@@ -464,15 +487,23 @@ class TextInput {
             this.canvas.style.cursor = 'default';
         }
             
-        if (!this.isFocused || this.selectionStart < 0) {
+        if (!this.isFocused || !this.isSelectionStart()) {
             return
         }
 
         const curPos = this.textPos(mousePos.x, mousePos.y);
-        const start = Math.min(this.selectionStart, curPos);
-        const end = Math.max(this.selectionStart, curPos);
+        const start = Math.min(this.selectionPos, curPos);
+        const end = Math.max(this.selectionPos, curPos);
 
         this.setSelection(start, end);
+    }
+
+    private isSelectionStart(): boolean {
+        return this.selectionPos >= 0;
+    }
+
+    private resetSelectionPos() {
+        this.selectionPos = -1;
     }
 
     private textPos(x: number, y: number) {
@@ -519,7 +550,7 @@ class TextInput {
             }
 
             this.setSelection(curPos, curPos);
-            this.selectionStart = curPos;
+            this.selectionPos = curPos;
 
             return;
         }
@@ -531,7 +562,7 @@ class TextInput {
         if (!this.isFocused) {
             return;
         }
-        this.selectionStart = -1;
+        this.resetSelectionPos();
     }
 
     private onDoubleClick(event: MouseEvent) {
