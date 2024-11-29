@@ -54,6 +54,7 @@ class TextInput {
     private blinkTimer: number;
     private maxLength: number;
     private fontSize: number;
+    private assemblePos: number;
 
     constructor(x: number, y: number, w: number, maxLength: number, fontSize: number, canvas: HTMLCanvasElement, context: CanvasRenderingContext2D) {
         this.canvas = canvas;
@@ -67,6 +68,7 @@ class TextInput {
         this.size = new Vec2(w, this.fontSize + 4);
         this.blinkTimer = 0;
         this.maxLength = maxLength;
+        this.assemblePos = -1;
 
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true);
@@ -102,7 +104,7 @@ class TextInput {
             }
         }
 
-        const textY = Math.round(y + this.fontSize / 2);
+        const textY = Math.round(y + 1 + this.fontSize / 2);
         const [before, after] = this.getSelectionOutside();
         const selectionText = this.value.substring(this.selection[0], this.selection[1]);
         // before
@@ -114,12 +116,29 @@ class TextInput {
         // after
         this.context.fillStyle = 'black';
         this.context.fillText(after, x + this.measureText(before + selectionText), textY);
+
+        if (this.isFocused && this.isAssembleMode()) {
+            this.drawUnderline(this.assemblePos);
+        }
         
         this.drawRect(this.position.x, this.position.y, this.size.x, this.size.y);
     }
 
+    private drawUnderline(pos: number) {
+        const x = this.position.x + TextInput.CURSOR_X_OFFSET;
+        const y = this.position.y + this.fontSize;
+        this.context.fillStyle = '#E1797C';
+        const cursorOffset = this.measureText(this.value.substring(0, pos));
+        const singleCharWidth = this.measureText(this.value.substring(pos, pos + 1));
+        this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2);
+    }
+
     update(deltaTime: number) {
         this.blinkTimer += deltaTime;
+    }
+
+    setText(text: string) {
+        this.value = text;
     }
 
     private measureText(text: string) {
@@ -144,7 +163,7 @@ class TextInput {
         event.preventDefault();
         event.clipboardData.setData('text/plain', this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
-        this.value = before + after;
+        this.setText(before + after);
         this.setSelection(before.length, before.length);
     }
 
@@ -192,10 +211,11 @@ class TextInput {
 
     private onRight(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault();
-        // const altKey = keyEvent.altKey;
+        const altKey = keyEvent.altKey;
         const shiftKey = keyEvent.shiftKey;
         const metaKey = keyEvent.metaKey;
         const controlKey = keyEvent.ctrlKey;
+        this.resetAssembleMode();
 
         if (this.isSelected()) {
             if (shiftKey) {
@@ -219,12 +239,17 @@ class TextInput {
             return;
         }
 
+        if (altKey) {
+            // TODO: shift 고려할것
+            const nextCurPos = this.getNearestTermIndex(this.selection[1] + 1)[1];
+            this.setSelection(nextCurPos, nextCurPos);
+            return;
+        }
+
         // Move cursor to the end of the text if meta/control key is pressed
         if (metaKey || controlKey) {
-            this.setSelection(
-                shiftKey ? this.selection[0] : this.value.length,
-                this.value.length
-            );
+            const nextCurPos = shiftKey ? this.selection[0] : this.value.length;
+            this.setSelection(nextCurPos, this.value.length);
             return;
         }
         
@@ -241,9 +266,11 @@ class TextInput {
 
     private onLeft(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault();
+        const altKey = keyEvent.altKey;
         const shiftKey = keyEvent.shiftKey;
         const metaKey = keyEvent.metaKey;
         const controlKey = keyEvent.ctrlKey;
+        this.resetAssembleMode();
 
         if (this.isSelected()) {
             if (shiftKey) {
@@ -267,10 +294,17 @@ class TextInput {
             return;
         }
 
+        if (altKey) {
+            // TODO: shift 고려할것
+            const nextCurPos = this.getNearestTermIndex(this.selection[0] - 1)[0];
+            this.setSelection(nextCurPos, nextCurPos);
+            return;
+        }
+
         // Move cursor to the start of the text if meta/control key is pressed
         if (metaKey || controlKey) {
-            // TODO: getNearestTermIndex 사용하여 커서 위치 이동 조절
-            this.setSelection(0, shiftKey ? this.selection[1] : 0);
+            const nextCurPos = shiftKey ? this.selection[1] : 0;
+            this.setSelection(0, nextCurPos);
             return;
         }
 
@@ -286,45 +320,54 @@ class TextInput {
         }
     }
 
-    private handleTypedText(keyEvent: KeyboardEvent) {
+    private handleMetaInput(keyEvent: KeyboardEvent): boolean {
         const char = keyEvent.key;
         const metaKey = keyEvent.metaKey;
 
         // TODO: copy, paste, cut 버그 수정
-
         // copy selection text
-        if (metaKey && (char === 'c')) {
+        if (metaKey && (char === 'c' || char === 'C' || char === 'ㅊ')) {
             this.canvas.dispatchEvent(new ClipboardEvent('copy', {
                 bubbles: true, // Allows the event to bubble up the DOM
                 cancelable: true, // Allows the event to be canceled
                 clipboardData: new DataTransfer(), // Clipboard data for the event
             }));
-            return;
+            return true;
         }
         
         // paste text
-        if (metaKey && (char === 'v')) {
+        if (metaKey && (char === 'v' || char === 'V' || char === 'ㅍ')) {
             this.canvas.dispatchEvent(new ClipboardEvent('paste', {
                 bubbles: true, // Allows the event to bubble up the DOM
                 cancelable: true, // Allows the event to be canceled
                 clipboardData: new DataTransfer(), // Clipboard data for the event
             }));
-            return;
+            return true;
         }
 
         // cut text
-        if (metaKey && (char === 'x')) {
+        if (metaKey && (char === 'x' || char === 'X' || char === 'ㅌ')) {
             this.canvas.dispatchEvent(new ClipboardEvent('cut', {
                 bubbles: true, // Allows the event to bubble up the DOM
                 cancelable: true, // Allows the event to be canceled
                 clipboardData: new DataTransfer(), // Clipboard data for the event
             }));
-            return;
+            return true;
         }
 
         // select all text
         if (metaKey && (char === 'a' || char === 'A' || char === 'ㅁ')) {
             this.selectAllText();
+            return true;
+        }
+
+        return false;
+    }
+
+    private handleTypedText(keyEvent: KeyboardEvent) {
+        const char = keyEvent.key;
+
+        if (this.handleMetaInput(keyEvent)) {
             return;
         }
 
@@ -343,13 +386,15 @@ class TextInput {
         if (this.isHangul(value)) {
             // Handle Hangul input
             const newValue = Hangul.a(Hangul.d(before + value));
-            this.value = newValue + after;
+            this.setText(newValue + after);
             this.setSelection(newValue.length, newValue.length);
+            this.setAssemblePos(newValue.length - 1);
         } else {
             // Handle non-Hangul input
             const lastCurPos = before.length + value.length;
-            this.value = before + value + after;
+            this.setText(before + value + after);
             this.setSelection(lastCurPos, lastCurPos);
+            this.resetAssembleMode();
         }
     }
 
@@ -361,18 +406,45 @@ class TextInput {
         if (this.isSelected()) {
             // If text is selected, remove the selected text
             const [before, after] = this.getSelectionOutside();
-            this.value = before + after;
+            this.setText(before + after);
             this.setSelection(before.length, before.length);
             return;
         }
 
-        // TODO: 한글 분해후 지우기 기능 추가
+        if (this.isAssembleMode()) {
+            const before = this.getAssemblePosBefore();
+            const disassembled = Hangul.d(this.getAssemblePosChar());
+            const after = this.getAssemblePosAfter();
+            const sliced = disassembled.slice(0, metaKey ? this.value.length * -1 : -1);
+            const assembled = Hangul.a(sliced);
+
+            if (assembled === '') {
+                this.resetAssembleMode();
+            }
+
+            const prefix = before + assembled;
+            this.setText(prefix + after);
+            this.setSelection(prefix.length, prefix.length);
+            return;
+        }
 
         // If no text is selected, remove the character before the cursor
         const [before, after] = this.getSelectionOutside();
         const newBefore = before.slice(0, metaKey ? before.length * -1 : -1);
-        this.value = newBefore + after;
+        this.setText(newBefore + after);
         this.setSelection(newBefore.length, newBefore.length);
+    }
+
+    private setAssemblePos(pos: number) {
+        this.assemblePos = pos;
+    }
+
+    private resetAssembleMode() {
+        this.assemblePos = -1;
+    }
+
+    private isAssembleMode(): boolean {
+        return this.assemblePos !== -1;
     }
 
     private isHangul(char: string): boolean {
@@ -434,6 +506,7 @@ class TextInput {
         event.preventDefault();
         const leftButton = event.button === 0;
         const mousePos = this.getMousePos(event);
+        this.resetAssembleMode();
 
         if (leftButton && this.contains(mousePos.x, mousePos.y)) {
             this.setFocus(true);
@@ -520,6 +593,18 @@ class TextInput {
         const before = this.value.substring(0, start);
         const after = this.value.substring(end, this.value.length);
         return [before, after];
+    }
+
+    private getAssemblePosBefore(): string {
+        return this.value.substring(0, this.assemblePos);
+    }
+
+    private getAssemblePosChar(): string {
+        return this.value.substring(this.assemblePos, Math.min(this.assemblePos + 1, this.value.length));
+    }
+
+    private getAssemblePosAfter(): string {
+        return this.value.substring(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
     }
 
     setFocus(focus: boolean) {
