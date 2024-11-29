@@ -124,6 +124,7 @@ class TextInput {
         this.context.fillStyle = 'black';
         this.context.fillText(after, x + this.measureText(before + selectionText), textY);
 
+        // draw underline to handle hangul assemble mode
         if (this.isFocused && this.isAssembleMode()) {
             this.drawUnderline(this.assemblePos);
         }
@@ -168,7 +169,6 @@ class TextInput {
     private onCopy(event: ClipboardEvent) {
         event.preventDefault();
         event.clipboardData.setData("text/plain", this.getSelectionText());
-        console.log(this.getSelectionText());
     }
 
     private onPaste(event: ClipboardEvent) {
@@ -418,6 +418,12 @@ class TextInput {
             this.setText(before + value + after);
             this.setSelection(lastCurPos, lastCurPos);
             this.resetAssembleMode();
+        }
+
+        // TODO: startPos 이동 구현
+        const totalWidth = this.measureText(this.value);
+        if (totalWidth > this.size.x) {
+            console.log('overflow!');
         }
     }
 
