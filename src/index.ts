@@ -30,24 +30,6 @@ function main() {
     requestAnimationFrame(step);
 }
 
-class Vec2 {
-    private _x: number;
-    private _y: number;
-
-    constructor(x: number, y: number) {
-        this._x = x;
-        this._y = y;
-    }
-
-    get x(): number {
-        return this._x
-    }
-
-    get y(): number {
-        return this._y
-    }
-}
-
 class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
     private static defaultSettings = {
@@ -466,7 +448,7 @@ class TextInput {
 
         // TODO: startPos 이동 구현
         const totalWidth = this.measureText(this.value);
-        // if (totalWidth > this.size.x) {
+        // if (totalWidth > this.settings.bounds.x) {
         //     console.log('overflow!');
         // }
     }
