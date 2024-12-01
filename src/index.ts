@@ -5,15 +5,7 @@ function main() {
     const context = canvas.getContext('2d')!;
     const inputs = [
         new TextInput({ maxLength: 8, bounds: { x: 200, y: 300, w: 74 } }, canvas),
-        new TextInput({ fontSize: 30, bounds: { x: 200, y: 500, w: 300 }, 
-            fontColor: 'blue',
-            selectionFontColor: 'white',
-            cursorColor: 'red',
-            selectionColor: 'rgba(0, 0, 106, 1)',
-            boxColor: 'black',
-            focusBoxColor: 'grey',
-            underlineColor: 'grey'
-        }, canvas)
+        new TextInput({ fontSize: 30, bounds: { x: 200, y: 500, w: 300 }}, canvas)
     ];
 
     let lastTime = 0;
@@ -100,14 +92,6 @@ class TextInput {
         this.canvas.addEventListener('cut', this.onCut.bind(this));
     }
 
-    private getStartX(): number {
-        return this.settings.bounds.x + this.settings.padding.left + this.settings.border.left;
-    }
-
-    private getStartY(): number {
-        return this.settings.bounds.y + this.settings.padding.top + this.settings.border.top;
-    }
-
     draw() {
         this.context.font = `${this.settings.fontSize}px monospace`;
         this.context.textAlign = 'left';
@@ -160,15 +144,6 @@ class TextInput {
         this.context.restore();
     }
 
-    private drawUnderline(pos: number) {
-        const x = this.getStartX();
-        const y = this.getStartY() + this.settings.fontSize - 2;
-        this.context.fillStyle = this.settings.underlineColor;
-        const cursorOffset = this.measureText(this.value.substring(0, pos));
-        const singleCharWidth = this.measureText(this.value.substring(pos, pos + 1));
-        this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2);
-    }
-
     update(deltaTime: number) {
         this.blinkTimer += deltaTime;
     }
@@ -179,6 +154,42 @@ class TextInput {
 
     getText(): string {
         return this.value;
+    }
+
+    setSelection(start: number, end: number) {
+        start = this.clamp(start, 0, this.value.length);
+        end = this.clamp(end, 0, this.value.length);
+
+        this.selection[0] = start;
+        this.selection[1] = end;
+        this.blinkTimer = 0.5;
+    }
+
+    setFocus(focus: boolean) {
+        if (focus) {
+            this.isFocused = true;
+            this.blinkTimer = 0.5;
+        } else {
+            this.setSelection(0, 0);
+            this.isFocused = false;
+        }
+    }
+
+    private drawUnderline(pos: number) {
+        const x = this.getStartX();
+        const y = this.getStartY() + this.settings.fontSize - 2;
+        this.context.fillStyle = this.settings.underlineColor;
+        const cursorOffset = this.measureText(this.value.substring(0, pos));
+        const singleCharWidth = this.measureText(this.value.substring(pos, pos + 1));
+        this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2);
+    }
+
+    private getStartX(): number {
+        return this.settings.bounds.x + this.settings.padding.left + this.settings.border.left;
+    }
+
+    private getStartY(): number {
+        return this.settings.bounds.y + this.settings.padding.top + this.settings.border.top;
     }
 
     private measureText(text: string): number {
@@ -192,60 +203,8 @@ class TextInput {
         return Math.floor(this.blinkTimer / 0.5) % 2;
     }
 
-    private onCopy(event: ClipboardEvent) {
-        event.preventDefault();
-        event.clipboardData.setData("text/plain", this.getSelectionText());
-    }
-
-    private onPaste(event: ClipboardEvent) {
-        event.preventDefault();
-        this.appendValue(event.clipboardData.getData('text'));
-    }
-
-    private onCut(event: ClipboardEvent) {
-        event.preventDefault();
-        event.clipboardData.setData('text/plain', this.getSelectionText());
-        const [before, after] = this.getSelectionOutside();
-        this.setText(before + after);
-        this.setSelection(before.length, before.length);
-    }
-
     private getSelectionText(): string {
         return this.value.substring(this.selection[0], this.selection[1]);
-    }
-
-    private onKeyDown(keyEvent: KeyboardEvent) {
-        if (!this.isFocused) {
-            return;
-        }
-        const keyCode = keyEvent.key;
-
-        switch (keyCode) {
-            case 'Meta':
-            case 'Alt':
-            case 'Shift':
-            case 'Control':
-            case 'Tab':
-            case 'Enter':
-            case 'ArrowUp':
-            case 'ArrowDown':
-                break;
-            case 'Backspace':
-                this.onRemove(keyEvent);
-                break;
-            case 'ArrowRight':
-                this.onRight(keyEvent);
-                break;
-            case 'ArrowLeft':
-                this.onLeft(keyEvent);
-                break;
-            case 'Escape':
-                this.onExitSelection(keyEvent);
-                break;
-            default: 
-                this.handleTypedText(keyEvent);
-                break;
-        }
     }
 
     private onExitSelection(keyEvent: KeyboardEvent) {
@@ -283,9 +242,16 @@ class TextInput {
         }
 
         if (altKey) {
-            // TODO: shift 고려할것
-            const nextCurPos = this.getNearestTermIndex(this.selection[1] + 1)[1];
-            this.setSelection(nextCurPos, nextCurPos);
+            // Handle shift key with alt key for word movement
+            const nextCurPos = this.getNearestWordIndex(this.selection[1] + 1)[1];
+
+            if (shiftKey) {
+                // If shift is pressed, extend the selection to the next word boundary
+                this.setSelection(this.selection[0], nextCurPos);
+            } else {
+                // Without shift, simply move the cursor
+                this.setSelection(nextCurPos, nextCurPos);
+            }
             return;
         }
 
@@ -338,9 +304,16 @@ class TextInput {
         }
 
         if (altKey) {
-            // TODO: shift 고려할것
-            const nextCurPos = this.getNearestTermIndex(this.selection[0] - 1)[0];
-            this.setSelection(nextCurPos, nextCurPos);
+            // Handle shift key with alt key for word movement
+            const nextCurPos = this.getNearestWordIndex(this.selection[0] - 1)[0];
+                
+            if (shiftKey) {
+                // If shift is pressed, extend the selection to the previous word boundary
+                this.setSelection(nextCurPos, this.selection[1]);
+            } else {
+                // Without shift, simply move the cursor
+                this.setSelection(nextCurPos, nextCurPos);
+            }
             return;
         }
 
@@ -511,25 +484,6 @@ class TextInput {
         );
     }
 
-    private onMouseMove(event: MouseEvent) {
-        const mousePos = this.getMousePos(event);
-        if (this.contains(mousePos.x, mousePos.y)) {
-            this.canvas.style.cursor = 'text';
-        } else {
-            this.canvas.style.cursor = 'default';
-        }
-            
-        if (!this.isFocused || !this.isSelectionStart()) {
-            return
-        }
-
-        const curPos = this.textPos(mousePos.x, mousePos.y);
-        const start = Math.min(this.selectionPos, curPos);
-        const end = Math.max(this.selectionPos, curPos);
-
-        this.setSelection(start, end);
-    }
-
     private isSelectionStart(): boolean {
         return this.selectionPos >= 0;
     }
@@ -563,6 +517,60 @@ class TextInput {
         const y = event.clientY - rect.top;
 
         return { x, y }
+    }
+
+    // DOM Event Handler
+    private onKeyDown(keyEvent: KeyboardEvent) {
+        if (!this.isFocused) {
+            return;
+        }
+        const keyCode = keyEvent.key;
+
+        switch (keyCode) {
+            case 'Meta':
+            case 'Alt':
+            case 'Shift':
+            case 'Control':
+            case 'Tab':
+            case 'Enter':
+            case 'ArrowUp':
+            case 'ArrowDown':
+                break;
+            case 'Backspace':
+                this.onRemove(keyEvent);
+                break;
+            case 'ArrowRight':
+                this.onRight(keyEvent);
+                break;
+            case 'ArrowLeft':
+                this.onLeft(keyEvent);
+                break;
+            case 'Escape':
+                this.onExitSelection(keyEvent);
+                break;
+            default: 
+                this.handleTypedText(keyEvent);
+                break;
+        }
+    }
+
+    private onMouseMove(event: MouseEvent) {
+        const mousePos = this.getMousePos(event);
+        if (this.contains(mousePos.x, mousePos.y)) {
+            this.canvas.style.cursor = 'text';
+        } else {
+            this.canvas.style.cursor = 'default';
+        }
+            
+        if (!this.isFocused || !this.isSelectionStart()) {
+            return
+        }
+
+        const curPos = this.textPos(mousePos.x, mousePos.y);
+        const start = Math.min(this.selectionPos, curPos);
+        const end = Math.max(this.selectionPos, curPos);
+
+        this.setSelection(start, end);
     }
 
     private onMouseDown(event: MouseEvent) {
@@ -607,12 +615,30 @@ class TextInput {
 
         if (leftButton && this.contains(mousePos.x, mousePos.y)) {
             const curPos = this.textPos(mousePos.x, mousePos.y);
-            const [start, end] = this.getNearestTermIndex(curPos);
+            const [start, end] = this.getNearestWordIndex(curPos);
             this.setSelection(start, end);
         }
     }
 
-    getNearestTermIndex(pos: number): [number, number] {
+    private onCopy(event: ClipboardEvent) {
+        event.preventDefault();
+        event.clipboardData.setData("text/plain", this.getSelectionText());
+    }
+
+    private onPaste(event: ClipboardEvent) {
+        event.preventDefault();
+        this.appendValue(event.clipboardData.getData('text'));
+    }
+
+    private onCut(event: ClipboardEvent) {
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', this.getSelectionText());
+        const [before, after] = this.getSelectionOutside();
+        this.setText(before + after);
+        this.setSelection(before.length, before.length);
+    }
+
+    private getNearestWordIndex(pos: number): [number, number] {
         let start = 0;
         let end = this.value.length;
 
@@ -641,15 +667,6 @@ class TextInput {
         this.setSelection(0, this.value.length);
     }
 
-    setSelection(start: number, end: number) {
-        start = this.clamp(start, 0, this.value.length);
-        end = this.clamp(end, 0, this.value.length);
-
-        this.selection[0] = start;
-        this.selection[1] = end;
-        this.blinkTimer = 0.5;
-    }
-
     private getSelectionOutside(): [string, string] {
         const start = Math.min(this.selection[0], this.selection[1]);
         const end = Math.max(this.selection[0], this.selection[1]);
@@ -668,16 +685,6 @@ class TextInput {
 
     private getAssemblePosAfter(): string {
         return this.value.substring(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
-    }
-
-    setFocus(focus: boolean) {
-        if (focus) {
-            this.isFocused = true;
-            this.blinkTimer = 0.5;
-        } else {
-            this.setSelection(0, 0);
-            this.isFocused = false;
-        }
     }
 
     private area() {
