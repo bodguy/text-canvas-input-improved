@@ -4,7 +4,7 @@ function main() {
     const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
     const context = canvas.getContext('2d')!;
     const inputs = [
-        new TextInput({ maxLength: 8, bounds: { x: 10, y: 10, w: 74 } }, canvas),
+        new TextInput({ maxLength: 8, bounds: { x: 10, y: 10, w: 300 } }, canvas),
         new TextInput({ fontSize: 30, bounds: { x: 10, y: 40, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas)
     ];
 
@@ -89,7 +89,7 @@ class TextInput {
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true);
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), true);
-        this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this), true);
+        document.addEventListener('mouseup', this.onMouseUp.bind(this), true);
         this.canvas.addEventListener('dblclick', this.onDoubleClick.bind(this), true);
         this.canvas.addEventListener('copy', async (e) => this.onCopy.call(this, e));
         this.canvas.addEventListener('paste', async (e) => this.onPaste.call(this, e));
