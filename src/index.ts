@@ -434,7 +434,7 @@ class TextInput {
         this.setAssemblePos(selectionPos - 1);
     }
 
-    private appendValue(value: string) {
+    private appendValue(value: string, resetAssemble: boolean = false) {
         // TODO: check substring value
         if (this.isMaxLengthOverflow()) {
             return;
@@ -449,6 +449,10 @@ class TextInput {
                 this.assembleHangul("", Hangul.a(Hangul.d(before + value)), after);
             } else {
                 this.assembleHangul(before, Hangul.a(Hangul.d(value)), after);
+            }
+
+            if (resetAssemble) {
+                this.resetAssembleMode();
             }
         } else {
             // Handle non-Hangul input
@@ -681,7 +685,7 @@ class TextInput {
     private async onPaste(event: ClipboardEvent) {
         if (!this.isFocused) return
         const text = await navigator.clipboard.readText()
-        this.appendValue(text);
+        this.appendValue(text, true);
     }
 
     private async onCut(event: ClipboardEvent) {
@@ -720,6 +724,7 @@ class TextInput {
 
     private selectAllText() {
         this.setSelection(0, this.value.length);
+        this.resetAssembleMode();
     }
 
     private getSelectionOutside(): [string, string] {
