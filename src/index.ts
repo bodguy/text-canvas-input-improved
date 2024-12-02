@@ -5,7 +5,9 @@ function main() {
     const context = canvas.getContext('2d')!;
     const inputs = [
         new TextInput({ maxLength: 8, bounds: { x: 10, y: 10, w: 300 } }, canvas),
-        new TextInput({ fontSize: 30, bounds: { x: 10, y: 40, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas)
+        new TextInput({ fontSize: 30, bounds: { x: 10, y: 40, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas),
+        new TextInput({ bounds: { x: 10, y: 100, w: 300 }, numberOnly: true, placeHolder: '숫자' }, canvas),
+        new TextInput({ bounds: { x: 10, y: 140, w: 300 }, password: true, placeHolder: '암호' }, canvas),
     ];
 
     let lastTime = 0;
@@ -39,6 +41,8 @@ class TextInput {
         defaultValue: '',
         placeHolder: '',
         placeHolderColor: 'rgb(111, 111, 111)',
+        numberOnly: false,
+        password: false,
         bounds: {
             x: 0,
             y: 0,
@@ -152,6 +156,10 @@ class TextInput {
         this.drawRect(area.x, area.y, area.w, area.h);
 
         this.context.restore();
+    }
+
+    private getDrawText(str: string): string {
+        return this.settings.password ? '*'.repeat(str.length) : str
     }
 
     update(deltaTime: number) {
