@@ -336,6 +336,14 @@ class TextInput {
         }
     }
 
+    private onHome(keyEvent: KeyboardEvent) {
+        this.setSelection(0, 0);
+    }
+
+    private onEnd(keyEvent: KeyboardEvent) {
+        this.setSelection(this.value.length, this.value.length);
+    }
+
     private handleMetaInput(keyEvent: KeyboardEvent): boolean {
         const char = keyEvent.key;
         const metaKey = keyEvent.metaKey;
@@ -402,15 +410,24 @@ class TextInput {
         return this.value.length >= this.maxLength;
     }
 
+    private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
+        this.setText(beforeValue + newValue + afterValue);
+        const selectionPos = beforeValue.length + newValue.length;
+        this.setSelection(selectionPos, selectionPos);
+        this.setAssemblePos(selectionPos - 1);
+    }
+
     private appendValue(value: string) {
         const [before, after] = this.getSelectionOutside();
 
         if (this.isHangul(value)) {
             // Handle Hangul input
-            const newValue = Hangul.a(Hangul.d(before + value));
-            this.setText(newValue + after);
-            this.setSelection(newValue.length, newValue.length);
-            this.setAssemblePos(newValue.length - 1);
+            // assemble hangul according to current assemble mode
+            if (this.isAssembleMode()) {
+                this.assembleHangul("", Hangul.a(Hangul.d(before + value)), after);
+            } else {
+                this.assembleHangul(before, Hangul.a(Hangul.d(value)), after);
+            }
         } else {
             // Handle non-Hangul input
             const lastCurPos = before.length + value.length;
@@ -548,6 +565,12 @@ class TextInput {
             case 'Escape':
                 this.onExitSelection(keyEvent);
                 break;
+            case 'Home':
+                this.onHome(keyEvent);
+                break;
+            case 'End':
+                this.onEnd(keyEvent);
+                break;
             default: 
                 this.handleTypedText(keyEvent);
                 break;
@@ -639,6 +662,7 @@ class TextInput {
     }
 
     private getNearestWordIndex(pos: number): [number, number] {
+        // TODO: bugfix when alt + (left | right) cursor move start/end position
         let start = 0;
         let end = this.value.length;
 
