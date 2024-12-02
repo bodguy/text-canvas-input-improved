@@ -593,6 +593,7 @@ class TextInput {
                 this.onHome(keyEvent);
                 break;
             case 'End':
+                keyEvent.preventDefault();
                 this.onEnd(keyEvent);
                 break;
             case ' ':
