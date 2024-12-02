@@ -595,6 +595,9 @@ class TextInput {
             case 'End':
                 this.onEnd(keyEvent);
                 break;
+            case ' ':
+                keyEvent.preventDefault();
+                // Intentionally no break statement
             default: 
                 this.handleTypedText(keyEvent);
                 break;
