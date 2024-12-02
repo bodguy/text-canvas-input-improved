@@ -4,8 +4,8 @@ function main() {
     const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
     const context = canvas.getContext('2d')!;
     const inputs = [
-        new TextInput({ maxLength: 8, bounds: { x: 200, y: 300, w: 74 } }, canvas),
-        new TextInput({ fontSize: 30, bounds: { x: 200, y: 500, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas)
+        new TextInput({ maxLength: 8, bounds: { x: 10, y: 10, w: 74 } }, canvas),
+        new TextInput({ fontSize: 30, bounds: { x: 10, y: 40, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas)
     ];
 
     let lastTime = 0;
@@ -25,6 +25,7 @@ function main() {
 class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
     private static defaultSettings = {
+        font: 'Apple SD Gothic Neo',
         fontColor: 'black',
         selectionFontColor: 'black',
         cursorColor: 'black',
@@ -90,13 +91,13 @@ class TextInput {
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), true);
         this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this), true);
         this.canvas.addEventListener('dblclick', this.onDoubleClick.bind(this), true);
-        this.canvas.addEventListener('copy', this.onCopy.bind(this));
-        this.canvas.addEventListener('paste', this.onPaste.bind(this));
-        this.canvas.addEventListener('cut', this.onCut.bind(this));
+        this.canvas.addEventListener('copy', async (e) => this.onCopy.call(this, e));
+        this.canvas.addEventListener('paste', async (e) => this.onPaste.call(this, e));
+        this.canvas.addEventListener('cut', async (e) => this.onCut.call(this, e));
     }
 
     draw() {
-        this.context.font = `${this.settings.fontSize}px monospace`;
+        this.context.font = `${this.settings.fontSize}px ${this.settings.font}`;
         this.context.textAlign = 'left';
         this.context.textBaseline = 'middle';
 
@@ -210,7 +211,7 @@ class TextInput {
     }
 
     private measureText(text: string): number {
-        this.context.font = `${this.settings.fontSize}px monospace`;
+        this.context.font = `${this.settings.fontSize}px ${this.settings.font}`;
         this.context.textAlign = 'left';
         this.context.textBaseline = 'middle';
         return this.context.measureText(text).width;
@@ -365,38 +366,29 @@ class TextInput {
         this.setSelection(this.value.length, this.value.length);
     }
 
+    private createClipboardEvent(type: 'copy' | 'paste' | 'cut'): ClipboardEvent {
+        return new ClipboardEvent(type, { bubbles: true, cancelable: true, clipboardData: null });
+    }
+
     private handleMetaInput(keyEvent: KeyboardEvent): boolean {
         const char = keyEvent.key;
         const metaKey = keyEvent.metaKey;
 
-        // TODO: copy, paste, cut 버그 수정
         // copy selection text
         if (metaKey && (char === 'c' || char === 'C' || char === 'ㅊ')) {
-            this.canvas.dispatchEvent(new ClipboardEvent('copy', {
-                bubbles: true, // Allows the event to bubble up the DOM
-                cancelable: true, // Allows the event to be canceled
-                clipboardData: new DataTransfer(), // Clipboard data for the event
-            }));
+            this.canvas.dispatchEvent(this.createClipboardEvent('copy'));
             return true;
         }
         
         // paste text
         if (metaKey && (char === 'v' || char === 'V' || char === 'ㅍ')) {
-            this.canvas.dispatchEvent(new ClipboardEvent('paste', {
-                bubbles: true, // Allows the event to bubble up the DOM
-                cancelable: true, // Allows the event to be canceled
-                clipboardData: new DataTransfer(), // Clipboard data for the event
-            }));
+            this.canvas.dispatchEvent(this.createClipboardEvent('paste'));
             return true;
         }
 
         // cut text
         if (metaKey && (char === 'x' || char === 'X' || char === 'ㅌ')) {
-            this.canvas.dispatchEvent(new ClipboardEvent('cut', {
-                bubbles: true, // Allows the event to bubble up the DOM
-                cancelable: true, // Allows the event to be canceled
-                clipboardData: new DataTransfer(), // Clipboard data for the event
-            }));
+            this.canvas.dispatchEvent(this.createClipboardEvent('cut'));
             return true;
         }
 
@@ -426,14 +418,12 @@ class TextInput {
             return;
         }
 
-        if (!this.isMaxLengthOverflow()) {
-            this.appendValue(char);   
-        }
+        this.appendValue(char);
     }
 
-    private isMaxLengthOverflow(): boolean {
+    private isMaxLengthOverflow(newValue: string = ''): boolean {
         if (this.maxLength === -1) return false;
-        return this.value.length >= this.maxLength;
+        return this.value.length + newValue.length >= this.maxLength;
     }
 
     private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -444,6 +434,11 @@ class TextInput {
     }
 
     private appendValue(value: string) {
+        // TODO: check substring value
+        if (this.isMaxLengthOverflow()) {
+            return;
+        }
+
         const [before, after] = this.getSelectionOutside();
 
         if (this.isHangul(value)) {
@@ -673,19 +668,20 @@ class TextInput {
         }
     }
 
-    private onCopy(event: ClipboardEvent) {
-        event.preventDefault();
-        event.clipboardData.setData("text/plain", this.getSelectionText());
+    private async onCopy(event: ClipboardEvent) {
+        if (!this.isFocused) return
+        await navigator.clipboard.writeText(this.getSelectionText());
     }
 
-    private onPaste(event: ClipboardEvent) {
-        event.preventDefault();
-        this.appendValue(event.clipboardData.getData('text'));
+    private async onPaste(event: ClipboardEvent) {
+        if (!this.isFocused) return
+        const text = await navigator.clipboard.readText()
+        this.appendValue(text);
     }
 
-    private onCut(event: ClipboardEvent) {
-        event.preventDefault();
-        event.clipboardData.setData('text/plain', this.getSelectionText());
+    private async onCut(event: ClipboardEvent) {
+        if (!this.isFocused) return
+        await navigator.clipboard.writeText(this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
         this.setText(before + after);
         this.setSelection(before.length, before.length);
