@@ -394,6 +394,7 @@ class TextInput {
 
         // select all text
         if (metaKey && (char === 'a' || char === 'A' || char === 'ㅁ')) {
+            keyEvent.preventDefault();
             this.selectAllText();
             return true;
         }
