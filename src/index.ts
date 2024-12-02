@@ -5,7 +5,7 @@ function main() {
     const context = canvas.getContext('2d')!;
     const inputs = [
         new TextInput({ maxLength: 8, bounds: { x: 200, y: 300, w: 74 } }, canvas),
-        new TextInput({ fontSize: 30, bounds: { x: 200, y: 500, w: 300 }}, canvas)
+        new TextInput({ fontSize: 30, bounds: { x: 200, y: 500, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas)
     ];
 
     let lastTime = 0;
@@ -36,6 +36,8 @@ class TextInput {
         maxLength: -1,
         caretBlinkRate: 0.5,
         defaultValue: '',
+        placeHolder: '',
+        placeHolderColor: 'rgb(111, 111, 111)',
         bounds: {
             x: 0,
             y: 0,
@@ -54,7 +56,8 @@ class TextInput {
             bottom: 1
         },
         enterCallback: (event: KeyboardEvent) => {},
-        hoverCallback: (inOut: boolean) => {}
+        hoverCallback: (inOut: boolean) => {},
+        focusCallback: (inOut: boolean) => {}
     };
     
     private canvas: HTMLCanvasElement;
@@ -100,6 +103,7 @@ class TextInput {
         const x = this.getStartX();
         const y = this.getStartY();
         const area = this.area();
+        const textY = Math.round(y + 1 + this.settings.fontSize / 2);
 
         this.context.save();
         this.context.beginPath();
@@ -108,22 +112,21 @@ class TextInput {
         
         if (this.isFocused) {
             if (this.isSelected()) {
-                const selectOffset = this.measureText(this.value.substring(0, this.selection[0]));
+                const selectOffset = this.measureText(this.getSubText(0, this.selection[0]));
                 const selectWidth = this.measureText(this.getSelectionText());
                 this.context.fillStyle = this.settings.selectionColor;
                 this.context.fillRect(selectOffset + x, y, selectWidth, this.settings.fontSize - 1);
             } else {
                 if (this.cursorBlink()) {
-                    const cursorOffset = this.measureText(this.value.substring(0, this.selection[0]));
+                    const cursorOffset = this.measureText(this.getSubText(0, this.selection[0]));
                     this.context.fillStyle = this.settings.cursorColor;
                     this.context.fillRect(cursorOffset + x, y, 1, this.settings.fontSize);
                 }
             }
         }
 
-        const textY = Math.round(y + 1 + this.settings.fontSize / 2);
         const [before, after] = this.getSelectionOutside();
-        const selectionText = this.value.substring(this.selection[0], this.selection[1]);
+        const selectionText = this.getSelectionText();
         // before
         this.context.fillStyle = this.settings.fontColor;
         this.context.fillText(before, x, textY);
@@ -133,6 +136,12 @@ class TextInput {
         // after
         this.context.fillStyle = this.settings.fontColor;
         this.context.fillText(after, x + this.measureText(before + selectionText), textY);
+
+        // draw placeholder
+        if (this.isEmpty()) {
+            this.context.fillStyle = this.settings.placeHolderColor;
+            this.context.fillText(this.settings.placeHolder, x, textY);
+        }
 
         // draw underline to handle hangul assemble mode
         if (this.isFocused && this.isAssembleMode()) {
@@ -162,25 +171,33 @@ class TextInput {
 
         this.selection[0] = start;
         this.selection[1] = end;
-        this.blinkTimer = 0.5;
+        this.blinkTimer = this.settings.caretBlinkRate;
     }
 
     setFocus(focus: boolean) {
         if (focus) {
             this.isFocused = true;
-            this.blinkTimer = 0.5;
+            this.blinkTimer = this.settings.caretBlinkRate;
+            this.settings.focusCallback(true);
         } else {
             this.setSelection(0, 0);
+            this.resetAssembleMode();
+            this.resetSelectionPos();
             this.isFocused = false;
+            this.settings.focusCallback(false);
         }
+    }
+
+    isEmpty(): boolean {
+        return this.value.length === 0;
     }
 
     private drawUnderline(pos: number) {
         const x = this.getStartX();
         const y = this.getStartY() + this.settings.fontSize - 2;
         this.context.fillStyle = this.settings.underlineColor;
-        const cursorOffset = this.measureText(this.value.substring(0, pos));
-        const singleCharWidth = this.measureText(this.value.substring(pos, pos + 1));
+        const cursorOffset = this.measureText(this.getSubText(0, pos));
+        const singleCharWidth = this.measureText(this.getSubText(pos, pos + 1));
         this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2);
     }
 
@@ -200,11 +217,15 @@ class TextInput {
     }
 
     private cursorBlink() {
-        return Math.floor(this.blinkTimer / 0.5) % 2;
+        return Math.floor(this.blinkTimer / this.settings.caretBlinkRate) % 2;
     }
 
     private getSelectionText(): string {
-        return this.value.substring(this.selection[0], this.selection[1]);
+        return this.getSubText(this.selection[0], this.selection[1]);
+    }
+
+    private getSubText(start: number, end: number) {
+        return this.value.substring(start, end);
     }
 
     private onExitSelection(keyEvent: KeyboardEvent) {
@@ -385,6 +406,11 @@ class TextInput {
             return true;
         }
 
+        // refresh event
+        if (metaKey && (char === 'r' || char === 'R' || char === 'ㄱ' )) {
+            return true;
+        }
+
         return false;
     }
 
@@ -549,9 +575,11 @@ class TextInput {
             case 'Shift':
             case 'Control':
             case 'Tab':
-            case 'Enter':
             case 'ArrowUp':
             case 'ArrowDown':
+                break;
+            case 'Enter':
+                this.settings.enterCallback(keyEvent);
                 break;
             case 'Backspace':
                 this.onRemove(keyEvent);
@@ -581,8 +609,10 @@ class TextInput {
         const mousePos = this.getMousePos(event);
         if (this.contains(mousePos.x, mousePos.y)) {
             this.canvas.style.cursor = 'text';
+            this.settings.hoverCallback(true);
         } else {
             this.canvas.style.cursor = 'default';
+            this.settings.hoverCallback(false);
         }
             
         if (!this.isFocused || !this.isSelectionStart()) {
@@ -694,24 +724,24 @@ class TextInput {
     private getSelectionOutside(): [string, string] {
         const start = Math.min(this.selection[0], this.selection[1]);
         const end = Math.max(this.selection[0], this.selection[1]);
-        const before = this.value.substring(0, start);
-        const after = this.value.substring(end, this.value.length);
+        const before = this.getSubText(0, start);
+        const after = this.getSubText(end, this.value.length);
         return [before, after];
     }
 
     private getAssemblePosBefore(): string {
-        return this.value.substring(0, this.assemblePos);
+        return this.getSubText(0, this.assemblePos);
     }
 
     private getAssemblePosChar(): string {
-        return this.value.substring(this.assemblePos, Math.min(this.assemblePos + 1, this.value.length));
+        return this.getSubText(this.assemblePos, Math.min(this.assemblePos + 1, this.value.length));
     }
 
     private getAssemblePosAfter(): string {
-        return this.value.substring(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
+        return this.getSubText(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
     }
 
-    private area() {
+    private area(): { x: number, y: number, w: number, h: number } {
         return {
             x: this.settings.bounds.x - this.settings.padding.left - this.settings.border.left,
             y: this.settings.bounds.y - this.settings.padding.top - this.settings.border.top,
@@ -720,7 +750,7 @@ class TextInput {
         }
     }
 
-    private contains(x: number, y: number) {
+    private contains(x: number, y: number): boolean {
         const area = this.area();
         return x >= area.x &&
             x <= (this.settings.bounds.x + area.w) &&
