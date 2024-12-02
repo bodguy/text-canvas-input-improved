@@ -442,9 +442,17 @@ class TextInput {
         this.setAssemblePos(selectionPos - 1);
     }
 
+    private isNumeric(value: string): boolean {
+        return /^-?\d+$/.test(value)
+    }
+
     private appendValue(value: string, resetAssemble: boolean = false) {
         // TODO: check substring value
         if (this.isMaxLengthOverflow()) {
+            return;
+        }
+
+        if (this.settings.numberOnly && !this.isNumeric(value)) {
             return;
         }
 
@@ -620,10 +628,8 @@ class TextInput {
     private onMouseMove(event: MouseEvent) {
         const mousePos = this.getMousePos(event);
         if (this.contains(mousePos.x, mousePos.y)) {
-            this.canvas.style.cursor = 'text';
             this.settings.hoverCallback(true);
         } else {
-            this.canvas.style.cursor = 'default';
             this.settings.hoverCallback(false);
         }
             
