@@ -452,35 +452,31 @@ class TextInput {
     }
 
     private appendValue(value: string, resetAssemble: boolean = false) {
-        // TODO: check substring value
-        if (this.isMaxLengthOverflow(value)) {
-            return;
-        }
-
         if (this.settings.numberOnly && !this.isNumeric(value)) {
             return;
         }
 
         const [before, after] = this.getSelectionOutside();
 
+        if (this.isMaxLengthOverflow(value)) {
+            // const substrLen = before.length + after.length;
+            // const newValue = value.substring(0, substrLen);
+            // this.handleNonHangul(before, newValue, after);
+
+            this.resetAssembleMode();
+            return;
+        }
+
         if (this.isHangul(value)) {
             // Handle Hangul input
-            // assemble hangul according to current assemble mode
-            if (this.isAssembleMode()) {
-                this.assembleHangul("", Hangul.a(Hangul.d(before + value)), after);
-            } else {
-                this.assembleHangul(before, Hangul.a(Hangul.d(value)), after);
-            }
+            this.handleHangul(before, value, after);
 
             if (resetAssemble) {
                 this.resetAssembleMode();
             }
         } else {
             // Handle non-Hangul input
-            const lastCurPos = before.length + value.length;
-            this.setText(before + value + after);
-            this.setSelection(lastCurPos, lastCurPos);
-            this.resetAssembleMode();
+            this.handleNonHangul(before, value, after);
         }
 
         // TODO: startPos 이동 구현
@@ -488,6 +484,22 @@ class TextInput {
         // if (totalWidth > this.settings.bounds.x) {
         //     console.log('overflow!');
         // }
+    }
+
+    private handleHangul(before: string, value: string, after: string) {
+        // assemble hangul according to current assemble mode
+        if (this.isAssembleMode()) {
+            this.assembleHangul("", Hangul.a(Hangul.d(before + value)), after);
+        } else {
+            this.assembleHangul(before, Hangul.a(Hangul.d(value)), after);
+        }
+    }
+
+    private handleNonHangul(before: string, value: string, after: string) {
+        const lastCurPos = before.length + value.length;
+        this.setText(before + value + after);
+        this.setSelection(lastCurPos, lastCurPos);
+        this.resetAssembleMode();
     }
 
     private onRemove(keyEvent: KeyboardEvent) {
