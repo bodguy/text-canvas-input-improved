@@ -6,8 +6,8 @@ function main() {
     const inputs = [
         new TextInput({ maxLength: 8, bounds: { x: 10, y: 10, w: 300 } }, canvas),
         new TextInput({ fontSize: 30, bounds: { x: 10, y: 40, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas),
-        new TextInput({ bounds: { x: 10, y: 100, w: 300 }, numberOnly: true, placeHolder: '숫자' }, canvas),
-        new TextInput({ bounds: { x: 10, y: 140, w: 300 }, password: true, placeHolder: '암호' }, canvas),
+        new TextInput({ bounds: { x: 10, y: 100, w: 300 }, numberOnly: true, placeHolder: '숫자', maxLength: 2 }, canvas),
+        new TextInput({ bounds: { x: 10, y: 140, w: 300 }, password: true, placeHolder: '암호', maxLength: 15 }, canvas),
     ];
 
     let lastTime = 0;
@@ -437,7 +437,7 @@ class TextInput {
 
     private isMaxLengthOverflow(newValue: string = ''): boolean {
         if (this.maxLength === -1) return false;
-        return this.value.length + newValue.length >= this.maxLength;
+        return this.value.length + newValue.length > this.maxLength;
     }
 
     private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -453,7 +453,7 @@ class TextInput {
 
     private appendValue(value: string, resetAssemble: boolean = false) {
         // TODO: check substring value
-        if (this.isMaxLengthOverflow()) {
+        if (this.isMaxLengthOverflow(value)) {
             return;
         }
 
@@ -697,18 +697,18 @@ class TextInput {
     }
 
     private async onCopy(event: ClipboardEvent) {
-        if (!this.isFocused) return
+        if (!this.isFocused || this.settings.password) return;
         await navigator.clipboard.writeText(this.getSelectionText());
     }
 
     private async onPaste(event: ClipboardEvent) {
-        if (!this.isFocused) return
+        if (!this.isFocused) return;
         const text = await navigator.clipboard.readText()
         this.appendValue(text, true);
     }
 
     private async onCut(event: ClipboardEvent) {
-        if (!this.isFocused) return
+        if (!this.isFocused) return;
         await navigator.clipboard.writeText(this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
         this.setText(before + after);
