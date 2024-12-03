@@ -43,6 +43,7 @@ class TextInput {
         placeHolderColor: 'rgb(111, 111, 111)',
         numberOnly: false,
         password: false,
+        passwordChar: '*',
         bounds: {
             x: 0,
             y: 0,
@@ -132,15 +133,19 @@ class TextInput {
 
         const [before, after] = this.getSelectionOutside();
         const selectionText = this.getSelectionText();
+        const beforeValue = this.getDrawText(before)
+        const selectionValue = this.getDrawText(selectionText)
+        const afterValue = this.getDrawText(after)
+
         // before
         this.context.fillStyle = this.settings.fontColor;
-        this.context.fillText(before, x, textY);
+        this.context.fillText(beforeValue, x, textY);
         // selection
         this.context.fillStyle = this.settings.selectionFontColor;
-        this.context.fillText(selectionText, x + this.measureText(before), textY);
+        this.context.fillText(selectionValue, x + this.measureText(before), textY);
         // after
         this.context.fillStyle = this.settings.fontColor;
-        this.context.fillText(after, x + this.measureText(before + selectionText), textY);
+        this.context.fillText(afterValue, x + this.measureText(before + selectionText), textY);
 
         // draw placeholder
         if (this.isEmpty()) {
@@ -159,7 +164,7 @@ class TextInput {
     }
 
     private getDrawText(str: string): string {
-        return this.settings.password ? '*'.repeat(str.length) : str
+        return this.settings.password ? this.settings.passwordChar.repeat(str.length) : str
     }
 
     update(deltaTime: number) {
@@ -222,7 +227,7 @@ class TextInput {
         this.context.font = `${this.settings.fontSize}px ${this.settings.font}`;
         this.context.textAlign = 'left';
         this.context.textBaseline = 'middle';
-        return this.context.measureText(text).width;
+        return this.context.measureText(this.getDrawText(text)).width;
     }
 
     private cursorBlink() {
@@ -479,7 +484,7 @@ class TextInput {
         }
 
         // TODO: startPos 이동 구현
-        const totalWidth = this.measureText(this.value);
+        // const totalWidth = this.measureText(this.value);
         // if (totalWidth > this.settings.bounds.x) {
         //     console.log('overflow!');
         // }
