@@ -117,6 +117,7 @@ class TextInput {
     private context: CanvasRenderingContext2D;
     private value: string; // 입력된 텍스트
     private selection: [number, number]; // 선택 [시작, 끝] 위치
+    private selectionDirection: -1 | 0 | 1;
     private isFocused: boolean; // 포커스 여부
     private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
     private blinkTimer: number; // 커서 깜빡임 타이머
@@ -131,6 +132,7 @@ class TextInput {
         this.settings = Object.assign({}, TextInput.defaultSettings, settings);
         this.value = this.settings.defaultValue;
         this.selection = [0, 0];
+        this.selectionDirection = 0;
         this.isFocused = false;
         this.blinkTimer = 0;
         this.maxLength = this.settings.maxLength;
@@ -245,7 +247,7 @@ class TextInput {
             this.blinkTimer = this.settings.caretBlinkRate;
             this.settings.focusCallback(true);
         } else {
-            this.setSelection(0, 0);
+            this.onStartOfSelection();
             this.resetAssembleMode();
             this.resetSelectionPos();
             this.isFocused = false;
@@ -272,7 +274,7 @@ class TextInput {
     set type(value: 'text' | 'number' | 'password') {
         this.settings.type = value;
         this.resetAssembleMode();
-        this.setSelection(this.selection[1], this.selection[1]);
+        this.onCancelOfSelectionEnd();
     }
 
     private drawUnderline(pos: number) {
@@ -311,10 +313,6 @@ class TextInput {
         return this.value.substring(start, end);
     }
 
-    private onExitSelection(keyEvent: KeyboardEvent) {
-        this.setSelection(this.selection[1], this.selection[1]);
-    }
-
     private onRight(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault();
         const altKey = keyEvent.altKey;
@@ -335,10 +333,10 @@ class TextInput {
             } else {
                 if (metaKey || controlKey) {
                     // Clear the selection and Move cursor to the end of text
-                    this.setSelection(this.value.length, this.value.length);
+                    this.onEndOfSelection();
                 } else {
                     // Clear the selection and move cursor to the right boundary of the selection
-                    this.setSelection(this.selection[1], this.selection[1]);
+                    this.onCancelOfSelectionEnd();
                 }
             }
             
@@ -397,10 +395,10 @@ class TextInput {
             } else {
                 if (metaKey || controlKey) {
                     // Clear the selection and Move cursor to the beginning of text
-                    this.setSelection(0, 0);
+                    this.onStartOfSelection();
                 } else {
                     // Clear the selection and move cursor to the left boundary of the selection
-                    this.setSelection(this.selection[0], this.selection[0]);
+                    this.onCancelOfSelectionStart();
                 }
             }
             
@@ -440,12 +438,20 @@ class TextInput {
         }
     }
 
-    private onHome(keyEvent: KeyboardEvent) {
+    private onStartOfSelection() {
         this.setSelection(0, 0);
     }
 
-    private onEnd(keyEvent: KeyboardEvent) {
+    private onEndOfSelection() {
         this.setSelection(this.value.length, this.value.length);
+    }
+
+    private onCancelOfSelectionStart() {
+        this.setSelection(this.selection[0], this.selection[0]);
+    }
+
+    private onCancelOfSelectionEnd() {
+        this.setSelection(this.selection[1], this.selection[1]);
     }
 
     private createClipboardEvent(type: 'copy' | 'paste' | 'cut'): ClipboardEvent {
@@ -699,14 +705,14 @@ class TextInput {
                 this.onLeft(keyEvent);
                 break;
             case 'Escape':
-                this.onExitSelection(keyEvent);
+                this.onCancelOfSelectionEnd();
                 break;
             case 'Home':
-                this.onHome(keyEvent);
+                this.onStartOfSelection();
                 break;
             case 'End':
                 keyEvent.preventDefault();
-                this.onEnd(keyEvent);
+                this.onEndOfSelection();
                 break;
             case ' ':
                 keyEvent.preventDefault();
