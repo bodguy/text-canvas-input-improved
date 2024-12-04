@@ -271,6 +271,8 @@ class TextInput {
     
     set type(value: 'text' | 'number' | 'password') {
         this.settings.type = value;
+        this.resetAssembleMode();
+        this.setSelection(this.selection[1], this.selection[1]);
     }
 
     private drawUnderline(pos: number) {
