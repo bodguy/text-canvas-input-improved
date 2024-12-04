@@ -1,22 +1,71 @@
 import * as Hangul from 'hangul-js';
 
+type TextInputSettings = {
+    font: string,
+    fontColor: string,
+    selectionFontColor: string,
+    cursorColor: string,
+    selectionColor: string,
+    boxColor: string,
+    focusBoxColor: string,
+    underlineColor: string,
+    fontSize: number,
+    maxLength: number,
+    caretBlinkRate: number,
+    defaultValue: string,
+    placeHolder: string,
+    placeHolderColor: string,
+    type: 'text' | 'number' | 'password',
+    bounds: { x: number, y: number, w: number },
+    padding: { top: number, left: number, right: number, bottom: number },
+    border: { top: number, left: number, right: number, bottom: number },
+    enterCallback: (event: KeyboardEvent) => void,
+    hoverCallback: (inOut: boolean) => void,
+    focusCallback: (inOut: boolean) => void
+};
+
 function main() {
     const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
     const context = canvas.getContext('2d')!;
+    const showPasswordBtn = document.getElementById('show') as HTMLButtonElement;
     const inputs = [
-        new TextInput({ maxLength: 8, bounds: { x: 10, y: 10, w: 300 } }, canvas),
-        new TextInput({ fontSize: 30, bounds: { x: 10, y: 40, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas),
-        new TextInput({ bounds: { x: 10, y: 100, w: 300 }, numberOnly: true, placeHolder: '숫자', maxLength: 2 }, canvas),
-        new TextInput({ bounds: { x: 10, y: 140, w: 300 }, password: true, placeHolder: '암호', maxLength: 15 }, canvas),
+        new TextInput({ bounds: { x: 10, y: 20, w: 300 }, maxLength: 8 }, canvas),
+        new TextInput({ fontSize: 30, bounds: { x: 10, y: 50, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas),
+        new TextInput({ bounds: { x: 10, y: 110, w: 300 }, type: 'number', placeHolder: '숫자', maxLength: 8 }, canvas),
+        new TextInput({ bounds: { x: 10, y: 150, w: 300 }, type: 'password', placeHolder: '암호', maxLength: 15 }, canvas),
     ];
+    showPasswordBtn.addEventListener('click', () => {
+        const passwordInput = inputs[inputs.length - 1];
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            showPasswordBtn.textContent = "Hide";
+        } else {
+            passwordInput.type = "password";
+            showPasswordBtn.textContent = "Show";
+        }
+    });
 
     let lastTime = 0;
     function step(currentTime: DOMHighResTimeStamp) {
         const deltaTime = (currentTime - lastTime) / 1000;
         context.clearRect(0, 0, canvas.width, canvas.height);
 
-        inputs.forEach(it => it.update(deltaTime));
-        inputs.forEach(it => it.draw());
+        inputs.forEach((it) => it.update(deltaTime));
+        inputs.forEach((it) => it.draw());
+        inputs.forEach((it) => {
+            const { x, y, w } = it.area();
+            const maxLength = it.getMaxLength();
+
+            if (maxLength === -1) return;
+
+            context.font = `12px Monospaced`;
+            context.textAlign = 'left';
+            context.textBaseline = 'middle';
+            context.fillStyle = 'gray';
+            const text = `${maxLength - it.getLength() } remain`;
+            const textW = context.measureText(text).width;
+            context.fillText(text, x + w - textW, y - 7);
+        });
 
         lastTime = currentTime;
         window.requestAnimationFrame(step);
@@ -26,7 +75,7 @@ function main() {
 
 class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
-    private static defaultSettings = {
+    private static defaultSettings: TextInputSettings = {
         font: 'Apple SD Gothic Neo',
         fontColor: 'black',
         selectionFontColor: 'black',
@@ -41,9 +90,7 @@ class TextInput {
         defaultValue: '',
         placeHolder: '',
         placeHolderColor: 'rgb(111, 111, 111)',
-        numberOnly: false,
-        password: false,
-        passwordChar: '*',
+        type: 'text',
         bounds: {
             x: 0,
             y: 0,
@@ -78,7 +125,7 @@ class TextInput {
     private startPos: number; // 텍스트내 보여줄 시작 위치
     private settings: typeof TextInput.defaultSettings;
 
-    constructor(settings: Partial<typeof TextInput.defaultSettings>, canvas: HTMLCanvasElement) {
+    constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas;
         this.context = canvas.getContext('2d');
         this.settings = Object.assign({}, TextInput.defaultSettings, settings);
@@ -164,7 +211,11 @@ class TextInput {
     }
 
     private getDrawText(str: string): string {
-        return this.settings.password ? this.settings.passwordChar.repeat(str.length) : str
+        return this.getType() === 'password' ? '*'.repeat(str.length) : str
+    }
+
+    private getType(): 'text' | 'number' | 'password' {
+        return this.settings.type;
     }
 
     update(deltaTime: number) {
@@ -208,6 +259,18 @@ class TextInput {
 
     getLength(): number {
         return this.value.length;
+    }
+
+    getMaxLength(): number {
+        return this.settings.maxLength;
+    }
+
+    get type(): 'text' | 'number' | 'password' {
+        return this.settings.type;
+    }
+    
+    set type(value: 'text' | 'number' | 'password') {
+        this.settings.type = value;
     }
 
     private drawUnderline(pos: number) {
@@ -456,7 +519,7 @@ class TextInput {
     }
 
     private appendValue(value: string, resetAssemble: boolean = false) {
-        if (this.settings.numberOnly && !this.isNumeric(value)) {
+        if (this.getType() === 'number' && !this.isNumeric(value)) {
             return;
         }
 
@@ -719,7 +782,7 @@ class TextInput {
     }
 
     private async onCopy(event: ClipboardEvent) {
-        if (!this.isFocused || this.settings.password) return;
+        if (!this.isFocused || this.getType() === 'password') return;
         await navigator.clipboard.writeText(this.getSelectionText());
     }
 
@@ -730,7 +793,7 @@ class TextInput {
     }
 
     private async onCut(event: ClipboardEvent) {
-        if (!this.isFocused) return;
+        if (!this.isFocused || this.getType() === 'password') return;
         await navigator.clipboard.writeText(this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
         this.setText(before + after);
@@ -788,7 +851,7 @@ class TextInput {
         return this.getSubText(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
     }
 
-    private area(): { x: number, y: number, w: number, h: number } {
+    area(): { x: number, y: number, w: number, h: number } {
         return {
             x: this.settings.bounds.x - this.settings.padding.left - this.settings.border.left,
             y: this.settings.bounds.y - this.settings.padding.top - this.settings.border.top,
