@@ -790,7 +790,7 @@ class TextInput {
     }
 
     private async onCopy(event: ClipboardEvent) {
-        if (!this.isFocused || this.getType() === 'password') return;
+        if (!this.isFocused || this.getType() === 'password' || this.isEmpty()) return;
         await navigator.clipboard.writeText(this.getSelectionText());
     }
 
@@ -801,7 +801,7 @@ class TextInput {
     }
 
     private async onCut(event: ClipboardEvent) {
-        if (!this.isFocused || this.getType() === 'password') return;
+        if (!this.isFocused || this.getType() === 'password' || this.isEmpty()) return;
         await navigator.clipboard.writeText(this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
         this.setText(before + after);
