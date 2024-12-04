@@ -203,7 +203,11 @@ class TextInput {
     }
 
     isEmpty(): boolean {
-        return this.value.length === 0;
+        return this.getLength() === 0;
+    }
+
+    getLength(): number {
+        return this.value.length;
     }
 
     private drawUnderline(pos: number) {
@@ -459,11 +463,17 @@ class TextInput {
         const [before, after] = this.getSelectionOutside();
 
         if (this.isMaxLengthOverflow(value)) {
-            // const substrLen = before.length + after.length;
-            // const newValue = value.substring(0, substrLen);
-            // this.handleNonHangul(before, newValue, after);
+            // Calculate the remaining allowed length
+            const remainingLength = this.settings.maxLength - (before.length + after.length);
 
-            this.resetAssembleMode();
+            // Trim the value to fit within the remaining allowed length
+            const newValue = value.substring(0, remainingLength);
+
+            // Handle the non-Hangul part only if there's still space
+            if (newValue.length > 0) {
+                this.handleNonHangul(before, newValue, after);
+            }
+
             return;
         }
 
