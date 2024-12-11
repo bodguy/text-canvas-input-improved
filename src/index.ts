@@ -232,6 +232,10 @@ class TextInput {
         return this.value;
     }
 
+    private moveSelection(position: number) {
+        this.setSelection(position, position);
+    }
+
     setSelection(start: number, end: number) {
         start = this.clamp(start, 0, this.value.length);
         end = this.clamp(end, 0, this.value.length);
@@ -239,6 +243,12 @@ class TextInput {
         this.selection[0] = start;
         this.selection[1] = end;
         this.blinkTimer = this.settings.caretBlinkRate;
+        this.selectionDirection = this.getSelectionDirection(start, end);
+    }
+
+    private getSelectionDirection(start: number, end: number): -1 | 0 | 1 {
+        if (start === end) return 0
+        return start < end ? 1 : -1
     }
 
     setFocus(focus: boolean) {
@@ -313,6 +323,10 @@ class TextInput {
         return this.value.substring(start, end);
     }
 
+    private extendSelection(start: number, end: number) {
+        this.setSelection(start, end);
+    }
+
     private onRight(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault();
         const altKey = keyEvent.altKey;
@@ -325,10 +339,10 @@ class TextInput {
             if (shiftKey) {
                 if (metaKey || controlKey) {
                     // Move selection to the end of the text if meta/control key is pressed
-                    this.setSelection(this.selection[0], this.value.length);
+                    this.extendSelection(this.selection[0], this.value.length);
                 } else {
                      // Move selection to the right by one character
-                    this.setSelection(this.selection[0], this.selection[1] + 1);
+                    this.extendSelection(this.selection[0], this.selection[1] + 1);
                 }
             } else {
                 if (metaKey || controlKey) {
@@ -339,7 +353,6 @@ class TextInput {
                     this.onCancelOfSelectionEnd();
                 }
             }
-            
             return;
         }
 
@@ -349,29 +362,32 @@ class TextInput {
 
             if (shiftKey) {
                 // If shift is pressed, extend the selection to the next word boundary
-                this.setSelection(this.selection[0], nextCurPos);
+                this.extendSelection(this.selection[0], nextCurPos);
             } else {
                 // Without shift, simply move the cursor
-                this.setSelection(nextCurPos, nextCurPos);
+                this.moveSelection(nextCurPos);
             }
             return;
         }
 
         // Move cursor to the end of the text if meta/control key is pressed
         if (metaKey || controlKey) {
-            const nextCurPos = shiftKey ? this.selection[0] : this.value.length;
-            this.setSelection(nextCurPos, this.value.length);
+            if (shiftKey) {
+                this.extendSelection(this.selection[0], this.value.length);    
+            } else {
+                this.onEndOfSelection();
+            }
             return;
         }
         
         // Move cursor to the right by one character
-        const nextCurPos = this.selection[1] + 1;
         if (shiftKey) {
             // Extend selection while holding the shift key
-            this.setSelection(this.selection[0], nextCurPos);
+            this.extendSelection(this.selection[0], this.selection[1] + 1);
         } else {
             // Move cursor without extending selection
-            this.setSelection(nextCurPos, nextCurPos);
+            const nextCurPos = this.selection[1] + 1;
+            this.moveSelection(nextCurPos);
         }
     }
 
@@ -387,10 +403,10 @@ class TextInput {
             if (shiftKey) {
                 if (metaKey || controlKey) {
                     // Move selection to the start of the text if meta/control key is pressed
-                    this.setSelection(0, this.selection[1]);
+                    this.extendSelection(0, this.selection[1]);
                 } else {
                     // Move selection to the left by one character
-                    this.setSelection(this.selection[0], this.selection[1] - 1);
+                    this.extendSelection(this.selection[0], this.selection[1] - 1);
                 }
             } else {
                 if (metaKey || controlKey) {
@@ -401,7 +417,6 @@ class TextInput {
                     this.onCancelOfSelectionStart();
                 }
             }
-            
             return;
         }
 
@@ -411,47 +426,49 @@ class TextInput {
                 
             if (shiftKey) {
                 // If shift is pressed, extend the selection to the previous word boundary
-                this.setSelection(nextCurPos, this.selection[1]);
+                this.extendSelection(nextCurPos, this.selection[1]);
             } else {
                 // Without shift, simply move the cursor
-                this.setSelection(nextCurPos, nextCurPos);
+                this.moveSelection(nextCurPos);
             }
             return;
         }
 
         // Move cursor to the start of the text if meta/control key is pressed
         if (metaKey || controlKey) {
-            const nextCurPos = shiftKey ? this.selection[1] : 0;
-            this.setSelection(0, nextCurPos);
+            if (shiftKey) {
+                this.extendSelection(0, this.selection[1]);
+            } else {
+                this.onStartOfSelection();
+            }
             return;
         }
 
         // Move cursor to the left by one character
         if (shiftKey) {
             // Extend selection while holding the shift key
-            // TODO: BUGFIX
-            this.setSelection(this.selection[0] - 1, this.selection[1]);
+            this.extendSelection(this.selection[0] - 1, this.selection[1]);
         } else {
             // Move cursor without extending selection
             const nextCurPos = this.selection[1] - 1;
-            this.setSelection(nextCurPos, nextCurPos);
+            this.moveSelection(nextCurPos);
         }
     }
 
     private onStartOfSelection() {
-        this.setSelection(0, 0);
+        this.moveSelection(0);
     }
 
     private onEndOfSelection() {
-        this.setSelection(this.value.length, this.value.length);
+        this.moveSelection(this.value.length);
     }
 
     private onCancelOfSelectionStart() {
-        this.setSelection(this.selection[0], this.selection[0]);
+        this.moveSelection(this.selection[0]);
     }
 
     private onCancelOfSelectionEnd() {
-        this.setSelection(this.selection[1], this.selection[1]);
+        this.moveSelection(this.selection[1]);
     }
 
     private createClipboardEvent(type: 'copy' | 'paste' | 'cut'): ClipboardEvent {
@@ -515,13 +532,6 @@ class TextInput {
         return this.value.length + newValue.length > this.maxLength;
     }
 
-    private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
-        this.setText(beforeValue + newValue + afterValue);
-        const selectionPos = beforeValue.length + newValue.length;
-        this.setSelection(selectionPos, selectionPos);
-        this.setAssemblePos(selectionPos - 1);
-    }
-
     private isNumeric(value: string): boolean {
         return /^-?\d+$/.test(value)
     }
@@ -576,10 +586,17 @@ class TextInput {
         }
     }
 
+    private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
+        this.setText(beforeValue + newValue + afterValue);
+        const selectionPos = beforeValue.length + newValue.length;
+        this.moveSelection(selectionPos);
+        this.setAssemblePos(selectionPos - 1);
+    }
+
     private handleNonHangul(before: string, value: string, after: string) {
         const lastCurPos = before.length + value.length;
         this.setText(before + value + after);
-        this.setSelection(lastCurPos, lastCurPos);
+        this.moveSelection(lastCurPos);
         this.resetAssembleMode();
     }
 
@@ -592,7 +609,7 @@ class TextInput {
             // If text is selected, remove the selected text
             const [before, after] = this.getSelectionOutside();
             this.setText(before + after);
-            this.setSelection(before.length, before.length);
+            this.moveSelection(before.length);
             return;
         }
 
@@ -609,7 +626,7 @@ class TextInput {
 
             const prefix = before + assembled;
             this.setText(prefix + after);
-            this.setSelection(prefix.length, prefix.length);
+            this.moveSelection(prefix.length);
             return;
         }
 
@@ -617,7 +634,7 @@ class TextInput {
         const [before, after] = this.getSelectionOutside();
         const newBefore = before.slice(0, metaKey ? before.length * -1 : -1);
         this.setText(newBefore + after);
-        this.setSelection(newBefore.length, newBefore.length);
+        this.moveSelection(newBefore.length);
     }
 
     private setAssemblePos(pos: number) {
@@ -739,7 +756,7 @@ class TextInput {
         const start = Math.min(this.selectionPos, curPos);
         const end = Math.max(this.selectionPos, curPos);
 
-        this.setSelection(start, end);
+        this.extendSelection(start, end);
     }
 
     private onMouseDown(event: MouseEvent) {
@@ -758,7 +775,7 @@ class TextInput {
                 return;
             }
 
-            this.setSelection(curPos, curPos);
+            this.moveSelection(curPos);
             this.selectionPos = curPos;
 
             return;
@@ -785,7 +802,7 @@ class TextInput {
         if (leftButton && this.contains(mousePos.x, mousePos.y)) {
             const curPos = this.textPos(mousePos.x, mousePos.y);
             const [start, end] = this.getNearestWordIndex(curPos);
-            this.setSelection(start, end);
+            this.extendSelection(start, end);
         }
     }
 
@@ -805,7 +822,7 @@ class TextInput {
         await navigator.clipboard.writeText(this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
         this.setText(before + after);
-        this.setSelection(before.length, before.length);
+        this.moveSelection(before.length);
     }
 
     private getNearestWordIndex(pos: number): [number, number] {
@@ -835,7 +852,7 @@ class TextInput {
     }
 
     private selectAllText() {
-        this.setSelection(0, this.value.length);
+        this.extendSelection(0, this.value.length);
         this.resetAssembleMode();
     }
 
