@@ -16,3 +16,5 @@ just run `npm run dev`
 - alt + arrow subtle selection bug fix
 - 최대글자 한글조합중일때 버그
 - 패스워드입력시 한글
+- Delete key 핸들링
+- Alt 지우기 핸들링

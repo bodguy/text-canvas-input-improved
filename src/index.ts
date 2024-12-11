@@ -136,12 +136,12 @@ class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
     private static defaultSettings: TextInputSettings = {
         font: 'Apple SD Gothic Neo',
-        fontColor: 'black',
-        selectionFontColor: 'white',
-        cursorColor: 'black',
+        fontColor: '#000',
+        selectionFontColor: '#FFF',
+        cursorColor: '#000',
         selectionColor: '#0D0577',
         boxColor: '#767676',
-        focusBoxColor: '#E1797C',
+        focusBoxColor: '#000',
         underlineColor: '#000', 
         fontSize: 13,
         maxLength: -1,
