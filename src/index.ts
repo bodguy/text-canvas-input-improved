@@ -58,7 +58,51 @@ function main() {
             disabledInput.disabled = true;
             enableBtn.textContent = "Disable";
         }
-    })
+    });
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+        e.preventDefault();
+        const keyCode = e.key;
+        const shiftKey = e.shiftKey;
+
+        if (keyCode === "Tab" && !shiftKey) {
+            nextInputFocus();
+            return;
+        }
+
+        if (keyCode === "Tab" && shiftKey) {
+            previousInputFocus();
+        }
+    });
+
+    function nextInputFocus() {
+        const focusedIndex = inputs.findIndex(input => input.focus);
+        const currentIndex = focusedIndex === -1 ? 0 : focusedIndex;
+        let nextIndex = (currentIndex + 1) % inputs.length;
+    
+        // Skip disabled inputs
+        while(inputs[nextIndex].disabled) {
+            nextIndex = (nextIndex + 1) % inputs.length;
+            if (nextIndex === currentIndex) break; // Avoid infinite loop if all inputs are disabled
+        }
+    
+        inputs[currentIndex].focus = false;
+        inputs[nextIndex].focus = true;
+    }
+
+    function previousInputFocus() {
+        const focusedIndex = inputs.findIndex(input => input.focus);
+        const currentIndex = focusedIndex === -1 ? 0 : focusedIndex;
+        let nextIndex = (currentIndex - 1 + inputs.length) % inputs.length;
+    
+        // Skip disabled inputs
+        while(inputs[nextIndex].disabled) {
+            nextIndex = (nextIndex - 1 + inputs.length) % inputs.length;
+            if (nextIndex === currentIndex) break; // Avoid infinite loop if all inputs are disabled
+        }
+    
+        inputs[currentIndex].focus = false;
+        inputs[nextIndex].focus = true;
+    }
 
     let lastTime = 0;
     function step(currentTime: DOMHighResTimeStamp) {
@@ -235,24 +279,8 @@ class TextInput {
         this.context.restore();
     }
 
-    private getDrawText(str: string): string {
-        return this.getType() === 'password' ? '*'.repeat(str.length) : str
-    }
-
-    private getType(): 'text' | 'number' | 'password' {
-        return this.settings.type;
-    }
-
     update(deltaTime: number) {
         this.blinkTimer += deltaTime;
-    }
-
-    setText(text: string) {
-        this.value = text;
-    }
-
-    getText(): string {
-        return this.value;
     }
 
     private moveSelection(position: number) {
@@ -274,18 +302,8 @@ class TextInput {
         return start < end ? 1 : -1
     }
 
-    setFocus(focus: boolean) {
-        if (focus) {
-            this.isFocused = true;
-            this.blinkTimer = this.settings.caretBlinkRate;
-            this.settings.focusCallback(true);
-        } else {
-            this.onStartOfSelection();
-            this.resetAssembleMode();
-            this.resetSelectionPos();
-            this.isFocused = false;
-            this.settings.focusCallback(false);
-        }
+    isSelected(): boolean {
+        return this.selection[0] !== this.selection[1];
     }
 
     isEmpty(): boolean {
@@ -300,13 +318,39 @@ class TextInput {
         return this.settings.maxLength;
     }
 
+    set text(value: string) {
+        this.value = value;
+    }
+
+    get text(): string {
+        return this.value;
+    }
+
+    get focus(): boolean {
+        return this.isFocused;
+    }
+
+    set focus(value: boolean) {
+        if (value && !this.disabled) {
+            this.isFocused = true;
+            this.blinkTimer = this.settings.caretBlinkRate;
+            this.settings.focusCallback(true);
+        } else {
+            this.onStartOfSelection();
+            this.resetAssembleMode();
+            this.resetSelectionPos();
+            this.isFocused = false;
+            this.settings.focusCallback(false);
+        }
+    }
+
     get disabled(): boolean {
         return this.settings.disabled;
     }
 
     set disabled(value: boolean) {
         this.settings.disabled = value;
-        this.setFocus(false);
+        this.focus = false;
     }
 
     get type(): 'text' | 'number' | 'password' {
@@ -317,6 +361,10 @@ class TextInput {
         this.settings.type = value;
         this.resetAssembleMode();
         this.onCancelOfSelectionEnd();
+    }
+
+    private getDrawText(str: string): string {
+        return this.type === 'password' ? '*'.repeat(str.length) : str
     }
 
     private drawUnderline() {
@@ -569,7 +617,7 @@ class TextInput {
     }
 
     private appendValue(value: string, resetAssemble: boolean = false) {
-        if (this.getType() === 'number' && !this.isNumeric(value)) {
+        if (this.type === 'number' && !this.isNumeric(value)) {
             return;
         }
 
@@ -618,7 +666,7 @@ class TextInput {
     }
 
     private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
-        this.setText(beforeValue + newValue + afterValue);
+        this.text = beforeValue + newValue + afterValue;
         const selectionPos = beforeValue.length + newValue.length;
         this.moveSelection(selectionPos);
         this.setAssemblePos(selectionPos - 1);
@@ -626,7 +674,7 @@ class TextInput {
 
     private handleNonHangul(before: string, value: string, after: string) {
         const lastCurPos = before.length + value.length;
-        this.setText(before + value + after);
+        this.text = before + value + after;
         this.moveSelection(lastCurPos);
         this.resetAssembleMode();
     }
@@ -639,7 +687,7 @@ class TextInput {
         if (this.isSelected()) {
             // If text is selected, remove the selected text
             const [before, after] = this.getSelectionOutside();
-            this.setText(before + after);
+            this.text = before + after;
             this.moveSelection(before.length);
             return;
         }
@@ -655,7 +703,7 @@ class TextInput {
             }
 
             const prefix = before + assembled;
-            this.setText(prefix + after);
+            this.text = prefix + after;
             this.moveSelection(prefix.length);
             return;
         }
@@ -663,7 +711,7 @@ class TextInput {
         // If no text is selected, remove the character before the cursor
         const [before, after] = this.getSelectionOutside();
         const newBefore = before.slice(0, metaKey ? before.length * -1 : -1);
-        this.setText(newBefore + after);
+        this.text = newBefore + after;
         this.moveSelection(newBefore.length);
     }
 
@@ -796,7 +844,7 @@ class TextInput {
         this.resetAssembleMode();
 
         if (leftButton && this.contains(mousePos.x, mousePos.y) && !this.disabled) {
-            this.setFocus(true);
+            this.focus = true;
 
             const curPos = this.textPos(mousePos.x, mousePos.y);
 
@@ -811,7 +859,7 @@ class TextInput {
             return;
         }
 
-        this.setFocus(false);
+        this.focus = false;
     }
 
     private onMouseUp(event: MouseEvent) {
@@ -837,7 +885,7 @@ class TextInput {
     }
 
     private async onCopy(event: ClipboardEvent) {
-        if (!this.isFocused || this.getType() === 'password' || this.isEmpty()) return;
+        if (!this.isFocused || this.type === 'password' || this.isEmpty()) return;
         await navigator.clipboard.writeText(this.getSelectionText());
     }
 
@@ -848,10 +896,10 @@ class TextInput {
     }
 
     private async onCut(event: ClipboardEvent) {
-        if (!this.isFocused || this.getType() === 'password' || this.isEmpty()) return;
+        if (!this.isFocused || this.type === 'password' || this.isEmpty()) return;
         await navigator.clipboard.writeText(this.getSelectionText());
         const [before, after] = this.getSelectionOutside();
-        this.setText(before + after);
+        this.text = before + after;
         this.moveSelection(before.length);
     }
 
@@ -875,10 +923,6 @@ class TextInput {
         }
 
         return [start, end];
-    }
-
-    private isSelected(): boolean {
-        return this.selection[0] !== this.selection[1];
     }
 
     private selectAllText() {
