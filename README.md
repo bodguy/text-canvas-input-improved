@@ -13,4 +13,3 @@ just run `npm run dev`
 - text clip & viewport
 - left/right selection bug fix
 - alt + arrow subtle selection bug fix
-- disable/enable

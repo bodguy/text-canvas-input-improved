@@ -16,6 +16,9 @@ type TextInputSettings = {
     placeHolder: string,
     placeHolderColor: string,
     type: 'text' | 'number' | 'password',
+    disabled: boolean,
+    disabledColor: string,
+    disabledBorderColor: string,
     bounds: { x: number, y: number, w: number },
     padding: { top: number, left: number, right: number, bottom: number },
     border: { top: number, left: number, right: number, bottom: number },
@@ -28,14 +31,16 @@ function main() {
     const canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
     const context = canvas.getContext('2d')!;
     const showPasswordBtn = document.getElementById('show') as HTMLButtonElement;
+    const enableBtn = document.getElementById('enable') as HTMLButtonElement;
     const inputs = [
         new TextInput({ bounds: { x: 10, y: 20, w: 300 }, maxLength: 8 }, canvas),
         new TextInput({ fontSize: 30, bounds: { x: 10, y: 50, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas),
         new TextInput({ bounds: { x: 10, y: 110, w: 300 }, type: 'number', placeHolder: '숫자', maxLength: 8 }, canvas),
         new TextInput({ bounds: { x: 10, y: 150, w: 300 }, type: 'password', placeHolder: '암호', maxLength: 15 }, canvas),
+        new TextInput({ bounds: { x: 10, y: 190, w: 300 }, disabled: true }, canvas),
     ];
     showPasswordBtn.addEventListener('click', () => {
-        const passwordInput = inputs[inputs.length - 1];
+        const passwordInput = inputs[inputs.length - 2];
         if (passwordInput.type === "password") {
             passwordInput.type = "text";
             showPasswordBtn.textContent = "Hide";
@@ -44,6 +49,16 @@ function main() {
             showPasswordBtn.textContent = "Show";
         }
     });
+    enableBtn.addEventListener('click', () => {
+        const disabledInput = inputs[inputs.length - 1];
+        if (disabledInput.disabled) {
+            disabledInput.disabled = false;
+            enableBtn.textContent = "Enable";
+        } else {
+            disabledInput.disabled = true;
+            enableBtn.textContent = "Disable";
+        }
+    })
 
     let lastTime = 0;
     function step(currentTime: DOMHighResTimeStamp) {
@@ -91,6 +106,9 @@ class TextInput {
         placeHolder: '',
         placeHolderColor: 'rgb(111, 111, 111)',
         type: 'text',
+        disabled: false,
+        disabledColor: 'rgb(247, 247, 247)',
+        disabledBorderColor: 'rgb(204, 204, 204)',
         bounds: {
             x: 0,
             y: 0,
@@ -164,6 +182,11 @@ class TextInput {
         this.context.beginPath();
         this.context.rect(area.x, area.y, area.w + 1, area.h + 1);
         this.context.clip();
+
+        if (this.disabled) {
+            this.context.fillStyle = this.settings.disabledColor;
+            this.context.fillRect(this.settings.bounds.x - this.settings.padding.left, this.settings.bounds.y - this.settings.padding.top, area.w, area.h);
+        }
         
         if (this.isFocused) {
             if (this.isSelected()) {
@@ -275,6 +298,15 @@ class TextInput {
 
     getMaxLength(): number {
         return this.settings.maxLength;
+    }
+
+    get disabled(): boolean {
+        return this.settings.disabled;
+    }
+
+    set disabled(value: boolean) {
+        this.settings.disabled = value;
+        this.setFocus(false);
     }
 
     get type(): 'text' | 'number' | 'password' {
@@ -765,7 +797,7 @@ class TextInput {
         const mousePos = this.getMousePos(event);
         this.resetAssembleMode();
 
-        if (leftButton && this.contains(mousePos.x, mousePos.y)) {
+        if (leftButton && this.contains(mousePos.x, mousePos.y) && !this.disabled) {
             this.setFocus(true);
 
             const curPos = this.textPos(mousePos.x, mousePos.y);
@@ -897,7 +929,8 @@ class TextInput {
         this.context.beginPath();
     
         const edge = 1;
-        this.context.strokeStyle = this.isFocused ? this.settings.focusBoxColor : this.settings.boxColor;
+        this.context.strokeStyle = this.isFocused ? this.settings.focusBoxColor : 
+            (this.disabled ? this.settings.disabledBorderColor : this.settings.boxColor);
 
         // left vertical line
         this.context.lineWidth = this.isFocused ? 2 : this.settings.border.left;
