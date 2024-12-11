@@ -186,6 +186,7 @@ class TextInput {
     private maxLength: number; // 최대 글자 (-1인 경우 무한)
     private assemblePos: [number, number]; // TODO: 조합중인 한글 위치
     private startPos: number; // TODO: 텍스트내 보여줄 시작 위치
+    private wasOver: boolean;
     private settings: typeof TextInput.defaultSettings;
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
@@ -201,6 +202,7 @@ class TextInput {
         this.resetSelectionPos();
         this.resetAssembleMode();
         this.startPos = 0;
+        this.wasOver = false;
 
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true);
@@ -822,8 +824,14 @@ class TextInput {
         const mousePos = this.getMousePos(event);
         if (this.contains(mousePos.x, mousePos.y)) {
             this.settings.hoverCallback(true);
+            this.canvas.style.cursor = 'text';
+            this.wasOver = true;
         } else {
             this.settings.hoverCallback(false);
+            if (this.wasOver) {
+                this.canvas.style.cursor = 'default';
+                this.wasOver = false;
+            }
         }
             
         if (!this.isFocused || !this.isSelectionStart()) {
