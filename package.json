@@ -1,19 +1,35 @@
 {
-  "name": "input-test",
+  "name": "text-canvas-input-improved",
   "version": "1.0.0",
-  "description": "",
+  "description": "Canvas based text input field",
+  "homepage": "https://github.com/bodguy/text-canvas-input-improved",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/bodguy/text-canvas-input-improved.git"
+  },
   "main": "index.js",
   "type": "module",
+  "author": "bodguy <alsrudgns99@gmail.com> (https://github.com/bodguy)",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "canvas",
+    "hangul",
+    "ime"
+  ],
+  "license": "MIT",
   "dependencies": {
     "hangul-js": "^0.2.6",
     "typescript": "^5.7.2",
     "vite": "^6.0.1"
+  },
+  "publishConfig": {
+    "@bodguy:registry": "https://npm.pkg.github.com"
   }
 }
