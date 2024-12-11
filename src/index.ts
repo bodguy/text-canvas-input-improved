@@ -135,13 +135,13 @@ class TextInput {
     private context: CanvasRenderingContext2D;
     private value: string; // 입력된 텍스트
     private selection: [number, number]; // 선택 [시작, 끝] 위치
-    private selectionDirection: -1 | 0 | 1;
+    private selectionDirection: -1 | 0 | 1; // TODO: 선택방향
     private isFocused: boolean; // 포커스 여부
     private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
     private blinkTimer: number; // 커서 깜빡임 타이머
     private maxLength: number; // 최대 글자 (-1인 경우 무한)
-    private assemblePos: [number, number]; // 조합중인 한글 위치
-    private startPos: number; // 텍스트내 보여줄 시작 위치
+    private assemblePos: [number, number]; // TODO: 조합중인 한글 위치
+    private startPos: number; // TODO: 텍스트내 보여줄 시작 위치
     private settings: typeof TextInput.defaultSettings;
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
@@ -602,7 +602,6 @@ class TextInput {
             this.handleNonHangul(before, value, after);
         }
 
-        // TODO: startPos 이동 구현
         // const totalWidth = this.measureText(this.value);
         // if (totalWidth > this.settings.bounds.x) {
         //     console.log('overflow!');
