@@ -16,6 +16,7 @@ type TextInputSettings = {
     placeHolder: string,
     placeHolderColor: string,
     type: 'text' | 'number' | 'password',
+    passwordChar: '\u25CF' | '*',
     disabled: boolean,
     disabledColor: string,
     disabledBorderColor: string,
@@ -153,6 +154,7 @@ class TextInput {
         disabled: false,
         disabledColor: 'rgb(247, 247, 247)',
         disabledBorderColor: 'rgb(204, 204, 204)',
+        passwordChar: '\u25CF',
         bounds: {
             x: 0,
             y: 0,
@@ -366,7 +368,7 @@ class TextInput {
     }
 
     private getDrawText(str: string): string {
-        return this.type === 'password' ? '*'.repeat(str.length) : str
+        return this.type === 'password' ? this.settings.passwordChar.repeat(str.length) : str
     }
 
     private drawUnderline() {
