@@ -140,7 +140,7 @@ class TextInput {
     private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
     private blinkTimer: number; // 커서 깜빡임 타이머
     private maxLength: number; // 최대 글자 (-1인 경우 무한)
-    private assemblePos: number; // 조합중인 한글 위치
+    private assemblePos: [number, number]; // 조합중인 한글 위치
     private startPos: number; // 텍스트내 보여줄 시작 위치
     private settings: typeof TextInput.defaultSettings;
 
@@ -227,7 +227,7 @@ class TextInput {
 
         // draw underline to handle hangul assemble mode
         if (this.isFocused && this.isAssembleMode()) {
-            this.drawUnderline(this.assemblePos);
+            this.drawUnderline();
         }
         
         this.drawRect(area.x, area.y, area.w, area.h);
@@ -319,12 +319,12 @@ class TextInput {
         this.onCancelOfSelectionEnd();
     }
 
-    private drawUnderline(pos: number) {
+    private drawUnderline() {
         const x = this.getStartX();
         const y = this.getStartY() + this.settings.fontSize - 2;
         this.context.fillStyle = this.settings.underlineColor;
-        const cursorOffset = this.measureText(this.getSubText(0, pos));
-        const singleCharWidth = this.measureText(this.getSubText(pos, pos + 1));
+        const cursorOffset = this.measureText(this.getAssemblePosBefore());
+        const singleCharWidth = this.measureText(this.getAssemblePosChar());
         this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2);
     }
 
@@ -649,8 +649,7 @@ class TextInput {
             const before = this.getAssemblePosBefore();
             const disassembled = Hangul.d(this.getAssemblePosChar());
             const after = this.getAssemblePosAfter();
-            const sliced = disassembled.slice(0, -1);
-            const assembled = Hangul.a(sliced);
+            const assembled = Hangul.a(disassembled.slice(0, -1));
 
             if (assembled === '') {
                 this.resetAssembleMode();
@@ -670,15 +669,15 @@ class TextInput {
     }
 
     private setAssemblePos(pos: number) {
-        this.assemblePos = pos;
+        this.assemblePos = [pos, pos];
     }
 
     private resetAssembleMode() {
-        this.assemblePos = -1;
+        this.assemblePos = [-1, -1];
     }
 
     private isAssembleMode(): boolean {
-        return this.assemblePos !== -1;
+        return this.assemblePos[0] !== -1 && this.assemblePos[1] !== -1;
     }
 
     private isHangul(char: string): boolean {
@@ -897,15 +896,15 @@ class TextInput {
     }
 
     private getAssemblePosBefore(): string {
-        return this.getSubText(0, this.assemblePos);
+        return this.getSubText(0, this.assemblePos[0]);
     }
 
     private getAssemblePosChar(): string {
-        return this.getSubText(this.assemblePos, Math.min(this.assemblePos + 1, this.value.length));
+        return this.getSubText(this.assemblePos[0], Math.min(this.assemblePos[0] + 1, this.value.length));
     }
 
     private getAssemblePosAfter(): string {
-        return this.getSubText(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
+        return this.getSubText(Math.min(this.assemblePos[0] + 1, this.value.length), this.value.length);
     }
 
     area(): { x: number, y: number, w: number, h: number } {
