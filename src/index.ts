@@ -61,7 +61,7 @@ function main() {
         }
     });
     document.addEventListener('keydown', (e: KeyboardEvent) => {
-        e.preventDefault();
+        // e.preventDefault();
         const keyCode = e.key;
         const shiftKey = e.shiftKey;
 
@@ -181,7 +181,6 @@ class TextInput {
     private context: CanvasRenderingContext2D;
     private value: string; // 입력된 텍스트
     private selection: [number, number]; // 선택 [시작, 끝] 위치
-    private selectionDirection: -1 | 0 | 1; // TODO: 선택방향
     private isFocused: boolean; // 포커스 여부
     private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
     private blinkTimer: number; // 커서 깜빡임 타이머
@@ -197,7 +196,6 @@ class TextInput {
         this.settings = Object.assign({}, TextInput.defaultSettings, settings);
         this.value = this.settings.defaultValue;
         this.selection = [0, 0];
-        this.selectionDirection = 0;
         this.isFocused = false;
         this.blinkTimer = 0;
         this.maxLength = this.settings.maxLength;
@@ -238,7 +236,7 @@ class TextInput {
         
         if (this.isFocused) {
             if (this.isSelected()) {
-                const selectOffset = this.measureText(this.getSubText(0, this.selection[0]));
+                const selectOffset = this.measureText(this.getSubText(0, Math.min(this.selection[0], this.selection[1])));
                 const selectWidth = this.measureText(this.getSelectionText());
                 this.context.fillStyle = this.settings.selectionColor;
                 this.context.fillRect(selectOffset + x, y, selectWidth, this.settings.fontSize - 1);
@@ -298,12 +296,6 @@ class TextInput {
         this.selection[0] = start;
         this.selection[1] = end;
         this.blinkTimer = this.settings.caretBlinkRate;
-        this.selectionDirection = this.getSelectionDirection(start, end);
-    }
-
-    private getSelectionDirection(start: number, end: number): -1 | 0 | 1 {
-        if (start === end) return 0
-        return start < end ? 1 : -1
     }
 
     isSelected(): boolean {
@@ -434,7 +426,8 @@ class TextInput {
                     this.onEndOfSelection();
                 } else {
                     // Clear the selection and move cursor to the right boundary of the selection
-                    this.onCancelOfSelectionEnd();
+                    const rightBoundary = Math.max(this.selection[0], this.selection[1]);
+                    this.moveSelection(rightBoundary);
                 }
             }
             return;
@@ -498,7 +491,8 @@ class TextInput {
                     this.onStartOfSelection();
                 } else {
                     // Clear the selection and move cursor to the left boundary of the selection
-                    this.onCancelOfSelectionStart();
+                    const leftBoundary = Math.min(this.selection[0], this.selection[1]);
+                    this.moveSelection(leftBoundary);
                 }
             }
             return;
@@ -531,7 +525,7 @@ class TextInput {
         // Move cursor to the left by one character
         if (shiftKey) {
             // Extend selection while holding the shift key
-            this.extendSelection(this.selection[0] - 1, this.selection[1]);
+            this.extendSelection(this.selection[0], this.selection[1] - 1);
         } else {
             // Move cursor without extending selection
             const nextCurPos = this.selection[1] - 1;
