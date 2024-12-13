@@ -4,7 +4,6 @@ type TextInputSettings = {
     font: string,
     fontColor: string,
     selectionFontColor: string,
-    cursorColor: string,
     selectionColor: string,
     boxColor: string,
     focusBoxColor: string,
@@ -19,6 +18,7 @@ type TextInputSettings = {
     passwordChar: '\u25CF' | '*',
     disabled: boolean,
     disabledColor: string,
+    disabledFontColor: string,
     disabledBorderColor: string,
     bounds: { x: number, y: number, w: number },
     padding: { top: number, left: number, right: number, bottom: number },
@@ -38,7 +38,7 @@ function main() {
         new TextInput({ fontSize: 30, bounds: { x: 10, y: 50, w: 300 }, placeHolder: '한글을 입력해주세요' }, canvas),
         new TextInput({ bounds: { x: 10, y: 110, w: 300 }, type: 'number', placeHolder: '숫자', maxLength: 8 }, canvas),
         new TextInput({ bounds: { x: 10, y: 150, w: 300 }, type: 'password', placeHolder: '암호', maxLength: 15 }, canvas),
-        new TextInput({ bounds: { x: 10, y: 190, w: 300 }, disabled: true }, canvas),
+        new TextInput({ bounds: { x: 10, y: 180, w: 300 }, disabled: true }, canvas),
     ];
     showPasswordBtn.addEventListener('click', () => {
         const passwordInput = inputs[inputs.length - 2];
@@ -141,7 +141,6 @@ class TextInput {
         font: 'Apple SD Gothic Neo',
         fontColor: '#000',
         selectionFontColor: '#FFF',
-        cursorColor: '#000',
         selectionColor: '#0D0577',
         boxColor: '#767676',
         focusBoxColor: '#000',
@@ -155,6 +154,7 @@ class TextInput {
         type: 'text',
         disabled: false,
         disabledColor: 'rgb(247, 247, 247)',
+        disabledFontColor: '#545454',
         disabledBorderColor: 'rgb(204, 204, 204)',
         passwordChar: '\u25CF',
         bounds: {
@@ -245,7 +245,7 @@ class TextInput {
             } else {
                 if (this.cursorBlink()) {
                     const cursorOffset = this.measureText(this.getSubText(0, this.selection[0]));
-                    this.context.fillStyle = this.settings.cursorColor;
+                    this.context.fillStyle = this.settings.fontColor;
                     this.context.fillRect(cursorOffset + x, y, 1, this.settings.fontSize);
                 }
             }
@@ -258,13 +258,13 @@ class TextInput {
         const afterValue = this.getDrawText(after)
 
         // before
-        this.context.fillStyle = this.settings.fontColor;
+        this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.fontColor;
         this.context.fillText(beforeValue, x, textY);
         // selection
-        this.context.fillStyle = this.settings.selectionFontColor;
+        this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.selectionFontColor;
         this.context.fillText(selectionValue, x + this.measureText(before), textY);
         // after
-        this.context.fillStyle = this.settings.fontColor;
+        this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.fontColor;
         this.context.fillText(afterValue, x + this.measureText(before + selectionText), textY);
 
         // draw placeholder
