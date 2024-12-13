@@ -465,8 +465,7 @@ class TextInput {
             this.extendSelection(this.selection[0], this.selection[1] + 1);
         } else {
             // Move cursor without extending selection
-            const nextCurPos = this.selection[1] + 1;
-            this.moveSelection(nextCurPos);
+            this.moveSelection(this.selection[1] + 1);
         }
     }
 
@@ -505,8 +504,7 @@ class TextInput {
             const nextCurPos = this.getNearestWordIndex(this.selection[0] - 1)[0];
                 
             if (shiftKey) {
-                // If shift is pressed, extend the selection to the previous word boundary
-                this.extendSelection(nextCurPos, this.selection[1]);
+                this.extendSelection(this.selection[1], nextCurPos);
             } else {
                 // Without shift, simply move the cursor
                 this.moveSelection(nextCurPos);
@@ -517,7 +515,7 @@ class TextInput {
         // Move cursor to the start of the text if meta/control key is pressed
         if (metaKey || controlKey) {
             if (shiftKey) {
-                this.extendSelection(0, this.selection[1]);
+                this.extendSelection(this.selection[1], 0);
             } else {
                 this.onStartOfSelection();
             }
@@ -530,8 +528,7 @@ class TextInput {
             this.extendSelection(this.selection[0], this.selection[1] - 1);
         } else {
             // Move cursor without extending selection
-            const nextCurPos = this.selection[1] - 1;
-            this.moveSelection(nextCurPos);
+            this.moveSelection(this.selection[1] - 1);
         }
     }
 
