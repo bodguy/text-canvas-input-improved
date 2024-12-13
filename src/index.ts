@@ -186,7 +186,7 @@ class TextInput {
     private selectionPos: number; // 선택 시작 위치 (마우스 클릭할때만 사용)
     private blinkTimer: number; // 커서 깜빡임 타이머
     private maxLength: number; // 최대 글자 (-1인 경우 무한)
-    private assemblePos: [number, number]; // TODO: 조합중인 한글 위치
+    private assemblePos: number;
     private startPos: number; // TODO: 텍스트내 보여줄 시작 위치
     private wasOver: boolean;
     private settings: typeof TextInput.defaultSettings;
@@ -634,7 +634,7 @@ class TextInput {
             // Trim the value to fit within the remaining allowed length
             const newValue = value.substring(0, remainingLength);
 
-            // Handle the non-Hangul part only if there's still space
+            // Handle input as the non-Hangul only if there's still space
             if (newValue.length > 0) {
                 this.handleNonHangul(before, newValue, after);
             }
@@ -720,15 +720,15 @@ class TextInput {
     }
 
     private setAssemblePos(pos: number) {
-        this.assemblePos = [pos, pos];
+        this.assemblePos = pos;
     }
 
     private resetAssembleMode() {
-        this.assemblePos = [-1, -1];
+        this.assemblePos = -1;
     }
 
     private isAssembleMode(): boolean {
-        return this.assemblePos[0] !== -1 && this.assemblePos[1] !== -1;
+        return this.assemblePos !== -1;
     }
 
     private isHangul(char: string): boolean {
@@ -949,15 +949,15 @@ class TextInput {
     }
 
     private getAssemblePosBefore(): string {
-        return this.getSubText(0, this.assemblePos[0]);
+        return this.getSubText(0, this.assemblePos);
     }
 
     private getAssemblePosChar(): string {
-        return this.getSubText(this.assemblePos[0], Math.min(this.assemblePos[0] + 1, this.value.length));
+        return this.getSubText(this.assemblePos, Math.min(this.assemblePos + 1, this.value.length));
     }
 
     private getAssemblePosAfter(): string {
-        return this.getSubText(Math.min(this.assemblePos[0] + 1, this.value.length), this.value.length);
+        return this.getSubText(Math.min(this.assemblePos + 1, this.value.length), this.value.length);
     }
 
     area(): { x: number, y: number, w: number, h: number } {
