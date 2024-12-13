@@ -824,7 +824,7 @@ class TextInput {
 
     private onMouseMove(event: MouseEvent) {
         const mousePos = this.getMousePos(event);
-        if (this.contains(mousePos.x, mousePos.y)) {
+        if (this.contains(mousePos.x, mousePos.y) && !this.disabled) {
             this.settings.hoverCallback(true);
             this.canvas.style.cursor = 'text';
             this.wasOver = true;
