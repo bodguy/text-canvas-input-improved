@@ -88,6 +88,7 @@ function main() {
     
         inputs[currentIndex].focus = false;
         inputs[nextIndex].focus = true;
+        inputs[nextIndex].selectAllText();
     }
 
     function previousInputFocus() {
@@ -103,6 +104,7 @@ function main() {
     
         inputs[currentIndex].focus = false;
         inputs[nextIndex].focus = true;
+        inputs[nextIndex].selectAllText();
     }
 
     let lastTime = 0;
@@ -289,7 +291,7 @@ class TextInput {
         this.setSelection(position, position);
     }
 
-    setSelection(start: number, end: number) {
+    private setSelection(start: number, end: number) {
         start = this.clamp(start, 0, this.value.length);
         end = this.clamp(end, 0, this.value.length);
 
@@ -929,7 +931,7 @@ class TextInput {
         return [start, end];
     }
 
-    private selectAllText() {
+    selectAllText() {
         this.extendSelection(0, this.value.length);
         this.resetAssembleMode();
     }
