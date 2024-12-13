@@ -15,5 +15,6 @@ just run `npm run dev`
 - 최대글자 한글조합중일때 버그
 - 패스워드입력시 한글
 - Delete key 핸들링
+- Delete + Alt 주이기 핸들링
 - Alt 지우기 핸들링
 - Shift + Alt 선택 후, 입력한상태로 이동시 선택해제되고 커서는 재자리로 돌아오도록 수정
