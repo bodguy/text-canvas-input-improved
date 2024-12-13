@@ -660,12 +660,12 @@ class TextInput {
         // }
     }
 
-    private handleHangul(before: string, value: string, after: string) {
+    private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
         // assemble hangul according to current assemble mode
         if (this.isAssembleMode()) {
-            this.assembleHangul("", Hangul.a(Hangul.d(before + value)), after);
+            this.assembleHangul(this.getAssemblePosBefore(), Hangul.a(Hangul.d(this.getAssemblePosChar() + newValue)), afterValue);
         } else {
-            this.assembleHangul(before, Hangul.a(Hangul.d(value)), after);
+            this.assembleHangul(beforeValue, Hangul.a(Hangul.d(newValue)), afterValue);
         }
     }
 
