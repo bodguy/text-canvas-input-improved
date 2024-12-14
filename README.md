@@ -17,3 +17,4 @@ just run `npm run dev`
 - Delete + Alt 지우기 핸들링
 - Alt 지우기 핸들링
 - Alt + Shift 처음 이후 방향키입력시 고장남
+- Alt + shift 이후 meta + shift 입력시 고장남
