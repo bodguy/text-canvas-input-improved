@@ -74,6 +74,29 @@ function main() {
             previousInputFocus();
         }
     });
+    const showPasswordBtn2 = document.getElementById('show2');
+    const enableBtn2 = document.getElementById('enable2');
+
+    showPasswordBtn2.addEventListener('click', () => {
+        const passwordInput = document.getElementById('password') as HTMLInputElement;
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+            showPasswordBtn2.textContent = "Hide";
+        } else {
+            passwordInput.type = "password";
+            showPasswordBtn2.textContent = "Show";
+        }
+    });
+    enableBtn2.addEventListener('click', () => {
+        const disabledInput = document.getElementById('disabled') as HTMLInputElement;
+        if (disabledInput.disabled) {
+            disabledInput.disabled = false;
+            enableBtn2.textContent = "Enable";
+        } else {
+            disabledInput.disabled = true;
+            enableBtn2.textContent = "Disable";
+        }
+    });
 
     function nextInputFocus() {
         const focusedIndex = inputs.findIndex(input => input.focus);

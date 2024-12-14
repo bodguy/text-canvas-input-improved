@@ -9,10 +9,73 @@
 </head>
 
 <body>
-    <canvas id='myCanvas' width="330" height="205" style="image-rendering: pixelated;" tabindex='1'></canvas>
-    <div><button id="show" style="margin-bottom: 10px;">Show</button></div>
-    <div><button id="enable">Enable</button></div>
+    <div class="container">
+        <h2>Canvas</h2>
+        <canvas id='myCanvas' width="330" height="205" style="image-rendering: pixelated;" tabindex='1'></canvas>
+        <div><button id="show">Show</button></div>
+        <div><button id="enable">Enable</button></div>
+    </div>
+
+    <div class="container">
+        <h2>Html</h2>
+        <div>
+            <span>8 remain</span>
+            <input type="text" maxlength="8">
+        </div>
+        
+        <div>
+            <input type="text" style="font-size: 30px;" placeholder="한글을 입력해주세요">
+        </div>
+
+        <div>
+            <span>8 remain</span>
+            <input type="number" maxlength="8" placeholder="숫자">
+        </div>
+        
+        <div>
+            <span>15 remain</span>
+            <input id="password" type="password" maxlength="15" placeholder="암호">
+        </div>
+        
+        <div><input id="disabled" type="text" disabled></div>
+        <div><button id="show2">Show</button></div>
+        <div><button id="enable2">Enable</button></div>
+    </div>
+
+    
     <script type="module" src="/src/index.ts"></script>
 </body>
+<style>
+    div.container {
+        width: 100%;
+    }
 
+    div {
+        margin-bottom: 10px;
+        width: 300px;
+    }
+
+    input {
+        width: 300px;
+    }
+
+    input:focus {
+        border: 2px solid black;
+        border-radius: 2px;
+        outline: none;
+    }
+
+    span {
+        font-size: 12px;
+        font-family: Monospaced;
+        color: gray;
+        text-align: right;
+        float: right;
+    }
+
+    ::selection {
+        color: #FFF;
+        background: #0D0577;
+    }
+</style>
 </html>
