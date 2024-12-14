@@ -260,7 +260,7 @@ class TextInput {
         const x = this.getStartX();
         const y = this.getStartY();
         const area = this.area();
-        const textY = Math.round(y + 1 + this.settings.fontSize / 2);
+        const textY = Math.round(y + Math.round(this.settings.fontSize / 2) + 1);
 
         this.context.save();
         this.context.beginPath();
