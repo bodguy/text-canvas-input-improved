@@ -23,6 +23,7 @@ type TextInputSettings = {
     bounds: { x: number, y: number, w: number },
     padding: { top: number, left: number, right: number, bottom: number },
     border: { top: number, left: number, right: number, bottom: number },
+    focusBorder: { top: number, left: number, right: number, bottom: number },
     enterCallback: (event: KeyboardEvent) => void,
     hoverCallback: (inOut: boolean) => void,
     focusCallback: (inOut: boolean) => void
@@ -203,6 +204,12 @@ class TextInput {
             right: 1,
             bottom: 1
         },
+        focusBorder: { 
+            top: 3,
+            left: 3,
+            right: 3,
+            bottom: 3
+         },
         enterCallback: (event: KeyboardEvent) => {},
         hoverCallback: (inOut: boolean) => {},
         focusCallback: (inOut: boolean) => {}
@@ -1012,22 +1019,22 @@ class TextInput {
             (this.disabled ? this.settings.disabledBorderColor : this.settings.boxColor);
 
         // left vertical line
-        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.left;
-        this.context.moveTo(x + 0.5, y+ edge);
+        this.context.lineWidth = this.isFocused ? this.settings.focusBorder.left : this.settings.border.left;
+        this.context.moveTo(x + 0.5, y + edge);
         this.context.lineTo(x + 0.5, y + h);
     
         // right vertical line
-        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.right;
-        this.context.moveTo(x + w + 0.5, y+ edge);
+        this.context.lineWidth = this.isFocused ? this.settings.focusBorder.right : this.settings.border.right;
+        this.context.moveTo(x + w + 0.5, y + edge);
         this.context.lineTo(x + w + 0.5, y + h);
     
         // top horizontal line
-        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.top;
-        this.context.moveTo(x+ edge, y + 0.5);
+        this.context.lineWidth = this.isFocused ? this.settings.focusBorder.top : this.settings.border.top;
+        this.context.moveTo(x + edge, y + 0.5);
         this.context.lineTo(x + w, y + 0.5);
     
         // bottom horizontal line
-        this.context.lineWidth = this.isFocused ? 2 : this.settings.border.bottom;
+        this.context.lineWidth = this.isFocused ? this.settings.focusBorder.bottom : this.settings.border.bottom;
         this.context.moveTo(x + edge, y + h + 0.5);
         this.context.lineTo(x + w, y + h + 0.5);
     
