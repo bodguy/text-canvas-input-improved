@@ -126,7 +126,7 @@ function main() {
             context.fillStyle = 'gray';
             const text = `${maxLength - it.getLength() } remain`;
             const textW = context.measureText(text).width;
-            context.fillText(text, x + w - textW, y - 7);
+            context.fillText(text, x + w - textW - 8, y - 7);
         });
 
         lastTime = currentTime;
@@ -137,6 +137,12 @@ function main() {
 
 class TextInput {
     private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?']);
+    private static KOREAN_TO_ENGLISH: Record<string, string> = {
+        'ㅁ': 'a', 'ㄴ': 's', 'ㅇ': 'd', 'ㄹ': 'f', 'ㅎ': 'g', 'ㅗ': 'h', 'ㅓ': 'j', 'ㅏ': 'k', 'ㅣ': 'l',
+        'ㅂ': 'q', 'ㅈ': 'w', 'ㄷ': 'e', 'ㄱ': 'r', 'ㅅ': 't', 'ㅛ': 'y', 'ㅕ': 'u', 'ㅑ': 'i', 'ㅐ': 'o', 'ㅔ': 'p',
+        'ㅋ': 'z', 'ㅌ': 'x', 'ㅊ': 'c', 'ㅍ': 'v', 'ㅠ': 'b', 'ㅜ': 'n', 'ㅡ': 'm', 
+        'ㅃ': 'Q', 'ㅉ': 'W', 'ㄸ': 'E', 'ㄲ': 'R', 'ㅆ': 'T', 'o': 'ㅒ', 'p': 'ㅖ',
+      };
     private static defaultSettings: TextInputSettings = {
         font: 'Apple SD Gothic Neo',
         fontColor: '#000',
@@ -241,7 +247,7 @@ class TextInput {
                 const selectOffset = this.measureText(this.getSubText(0, Math.min(this.selection[0], this.selection[1])));
                 const selectWidth = this.measureText(this.getSelectionText());
                 this.context.fillStyle = this.settings.selectionColor;
-                this.context.fillRect(selectOffset + x, y, selectWidth, this.settings.fontSize - 1);
+                this.context.fillRect(selectOffset + x, y - 1, selectWidth, this.settings.fontSize + 3);
             } else {
                 if (this.cursorBlink()) {
                     const cursorOffset = this.measureText(this.getSubText(0, this.selection[0]));
@@ -654,6 +660,11 @@ class TextInput {
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
+        if (this.type === 'password') {
+            this.assembleHangul(beforeValue, this.convertKoreanToEnglish(newValue), afterValue);
+            return;
+        }
+
         // assemble hangul according to current assemble mode
         if (this.isAssembleMode()) {
             this.assembleHangul(this.getAssemblePosBefore(), Hangul.a(Hangul.d(this.getAssemblePosChar() + newValue)), afterValue);
@@ -1003,6 +1014,10 @@ class TextInput {
     private clamp(value: number, min: number, max: number): number {
         return Math.min(Math.max(value, min), max);
     }
+
+    private convertKoreanToEnglish(value: string): string {
+        return TextInput.KOREAN_TO_ENGLISH[value];
+    } 
 }
 
 document.addEventListener("DOMContentLoaded", main);

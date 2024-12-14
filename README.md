@@ -13,7 +13,6 @@ just run `npm run dev`
 - text clip & viewport (텍스트내 보여줄 시작 위치)
 - alt + arrow subtle selection bug fix
 - 최대글자 한글조합중일때 버그
-- 패스워드입력시 한글
 - Delete key 핸들링
 - Delete + Alt 주이기 핸들링
 - Alt 지우기 핸들링
