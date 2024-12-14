@@ -1039,7 +1039,7 @@ class TextInput {
     }
 
     private convertKoreanToEnglish(value: string): string {
-        return TextInput.KOREAN_TO_ENGLISH[value];
+        return TextInput.KOREAN_TO_ENGLISH[value] ?? value;
     } 
 }
 
