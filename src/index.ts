@@ -441,6 +441,26 @@ class TextInput {
         this.setSelection(start, end);
     }
 
+    private moveRightBoundary() {
+        // Clear the selection and move cursor to the right boundary of the selection
+        const rightBoundary = Math.max(this.selection[0], this.selection[1]);
+        this.moveSelection(rightBoundary);
+    }
+
+    private moveLeftBoundary() {
+        // Clear the selection and move cursor to the left boundary of the selection
+        const leftBoundary = Math.min(this.selection[0], this.selection[1]);
+        this.moveSelection(leftBoundary);
+    }
+
+    private isLeftDirection(): boolean {
+        return this.selection[0] > this.selection[1];
+    }
+
+    private isRightDirection(): boolean {
+        return this.selection[0] < this.selection[1];
+    }
+
     private onRight(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault();
         const altKey = keyEvent.altKey;
@@ -455,17 +475,19 @@ class TextInput {
                     // Move selection to the end of the text if meta/control key is pressed
                     this.extendSelection(this.selection[0], this.value.length);
                 } else {
-                     // Move selection to the right by one character
-                    this.extendSelection(this.selection[0], this.selection[1] + 1);
+                    if (altKey && this.isLeftDirection()) {
+                        this.moveRightBoundary();
+                    } else {
+                        // Move selection to the right by one character
+                        this.extendSelection(this.selection[0], this.selection[1] + 1);
+                    }
                 }
             } else {
                 if (metaKey || controlKey) {
                     // Clear the selection and Move cursor to the end of text
                     this.onEndOfSelection();
                 } else {
-                    // Clear the selection and move cursor to the right boundary of the selection
-                    const rightBoundary = Math.max(this.selection[0], this.selection[1]);
-                    this.moveSelection(rightBoundary);
+                    this.moveRightBoundary();
                 }
             }
             return;
@@ -519,17 +541,19 @@ class TextInput {
                     // Move selection to the start of the text if meta/control key is pressed
                     this.extendSelection(0, this.selection[1]);
                 } else {
-                    // Move selection to the left by one character
-                    this.extendSelection(this.selection[0], this.selection[1] - 1);
+                    if (altKey && this.isRightDirection()) {
+                        this.moveLeftBoundary();
+                    } else {
+                        // Move selection to the left by one character
+                        this.extendSelection(this.selection[0], this.selection[1] - 1);
+                    }
                 }
             } else {
                 if (metaKey || controlKey) {
                     // Clear the selection and Move cursor to the beginning of text
                     this.onStartOfSelection();
                 } else {
-                    // Clear the selection and move cursor to the left boundary of the selection
-                    const leftBoundary = Math.min(this.selection[0], this.selection[1]);
-                    this.moveSelection(leftBoundary);
+                    this.moveLeftBoundary();
                 }
             }
             return;
