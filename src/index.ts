@@ -546,14 +546,14 @@ class TextInput {
                     // Extend selection to the start of the text
                     this.extendLeftBoundary();
                 } else {
-                    // if (altKey) {
-                    //     // Extend selection to the left by word
-                    //     const nextCurPos = this.getNearestWordIndex(this.selection[0] - 1)[0];
-                    //     this.extendSelection(this.selection[1], nextCurPos);
-                    // } else {
+                    if (altKey) {
+                        // Extend selection to the left by word
+                        const nextCurPos = this.getNearestWordIndex(this.selection[1] - 1)[0];
+                        this.extendSelection(this.selection[0], nextCurPos);
+                    } else {
                         // Extend selection to the left by one character
                         this.extendSelection(this.selection[0], this.selection[1] - 1);
-                    // }
+                    }
                 }
             } else {
                 if (metaKey || controlKey) {

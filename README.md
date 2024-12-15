@@ -15,4 +15,3 @@ just run `npm run dev`
 - Delete key 핸들링
 - Delete + Alt 지우기 핸들링
 - Alt 지우기 핸들링
-- Alt + Shift 처음 이후 방향키입력시 고장남
