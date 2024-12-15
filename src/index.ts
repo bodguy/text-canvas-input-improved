@@ -463,14 +463,6 @@ class TextInput {
         this.extendSelection(leftBoundary, 0);
     }
 
-    private isLeftDirection(): boolean {
-        return this.selection[0] > this.selection[1];
-    }
-
-    private isRightDirection(): boolean {
-        return this.selection[0] < this.selection[1];
-    }
-
     private onRight(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault();
         const altKey = keyEvent.altKey;
@@ -482,13 +474,15 @@ class TextInput {
         if (this.isSelected()) {
             if (shiftKey) {
                 if (metaKey || controlKey) {
-                    // Move selection to the end of the text if meta/control key is pressed
+                    // Extend selection to the end of the text
                     this.extendRightBoundary();
                 } else {
-                    if (altKey && this.isLeftDirection()) {
-                        this.moveRightBoundary();
+                    if (altKey) {
+                        // Extend selection to the right by word
+                        const nextCurPos = this.getNearestWordIndex(this.selection[1])[1];
+                        this.extendSelection(this.selection[0], nextCurPos);
                     } else {
-                        // Move selection to the right by one character
+                        // Extend selection to the right by one character
                         this.extendSelection(this.selection[0], this.selection[1] + 1);
                     }
                 }
@@ -517,11 +511,12 @@ class TextInput {
             return;
         }
 
-        // Move cursor to the end of the text if meta/control key is pressed
+        // meta/control key is pressed
         if (metaKey || controlKey) {
             if (shiftKey) {
                 this.extendSelection(this.selection[0], this.value.length);    
             } else {
+                // Move cursor to the end of the text
                 this.onEndOfSelection();
             }
             return;
@@ -548,15 +543,17 @@ class TextInput {
         if (this.isSelected()) {
             if (shiftKey) {
                 if (metaKey || controlKey) {
-                    // Move selection to the start of the text if meta/control key is pressed
+                    // Extend selection to the start of the text
                     this.extendLeftBoundary();
                 } else {
-                    if (altKey && this.isRightDirection()) {
-                        this.moveLeftBoundary();
-                    } else {
-                        // Move selection to the left by one character
+                    // if (altKey) {
+                    //     // Extend selection to the left by word
+                    //     const nextCurPos = this.getNearestWordIndex(this.selection[0] - 1)[0];
+                    //     this.extendSelection(this.selection[1], nextCurPos);
+                    // } else {
+                        // Extend selection to the left by one character
                         this.extendSelection(this.selection[0], this.selection[1] - 1);
-                    }
+                    // }
                 }
             } else {
                 if (metaKey || controlKey) {
@@ -582,11 +579,12 @@ class TextInput {
             return;
         }
 
-        // Move cursor to the start of the text if meta/control key is pressed
+        // meta/control key is pressed
         if (metaKey || controlKey) {
             if (shiftKey) {
                 this.extendSelection(this.selection[1], 0);
             } else {
+                // Move cursor to the start of the text
                 this.onStartOfSelection();
             }
             return;
