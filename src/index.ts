@@ -453,6 +453,16 @@ class TextInput {
         this.moveSelection(leftBoundary);
     }
 
+    private extendRightBoundary() {
+        const rightBoundary = Math.min(this.selection[0], this.selection[1]);
+        this.extendSelection(rightBoundary, this.value.length);
+    }
+
+    private extendLeftBoundary() {
+        const leftBoundary = Math.max(this.selection[0], this.selection[1]);
+        this.extendSelection(leftBoundary, 0);
+    }
+
     private isLeftDirection(): boolean {
         return this.selection[0] > this.selection[1];
     }
@@ -473,7 +483,7 @@ class TextInput {
             if (shiftKey) {
                 if (metaKey || controlKey) {
                     // Move selection to the end of the text if meta/control key is pressed
-                    this.extendSelection(this.selection[0], this.value.length);
+                    this.extendRightBoundary();
                 } else {
                     if (altKey && this.isLeftDirection()) {
                         this.moveRightBoundary();
@@ -539,7 +549,7 @@ class TextInput {
             if (shiftKey) {
                 if (metaKey || controlKey) {
                     // Move selection to the start of the text if meta/control key is pressed
-                    this.extendSelection(0, this.selection[1]);
+                    this.extendLeftBoundary();
                 } else {
                     if (altKey && this.isRightDirection()) {
                         this.moveLeftBoundary();
