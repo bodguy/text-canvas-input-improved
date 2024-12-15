@@ -505,7 +505,7 @@ class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = this.getNearestWordIndex(this.selection[1] + 1)[1];
+            const nextCurPos = this.getNearestWordIndex(this.selection[1])[1];
 
             if (shiftKey) {
                 // If shift is pressed, extend the selection to the next word boundary
@@ -982,7 +982,6 @@ class TextInput {
     }
 
     private getNearestWordIndex(pos: number): [number, number] {
-        // TODO: bugfix when alt + (left | right) cursor move start/end position
         let start = 0;
         let end = this.value.length;
 
