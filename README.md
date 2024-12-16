@@ -16,3 +16,5 @@ just run `npm run dev`
 - Delete + Alt 지우기 핸들링
 - Alt 지우기 핸들링
 - onRight, onLeft alt+shift 선택 넘어가는 버그
+- getStopWordRange start/end 이슈
+- getStopWordRange 특수문자 연속일 경우 처리
