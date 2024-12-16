@@ -30,7 +30,7 @@ export type TextInputSettings = {
 }
 
 export class TextInput {
-    private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?'])
+    private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?', '!', '@'])
     private static KOREAN_TO_ENGLISH: Record<string, string> = {
         ㅁ: 'a',
         ㄴ: 's',
@@ -921,16 +921,27 @@ export class TextInput {
         let end = this.getLength()
         const startNonAscii = this.isHangul(this.at(pos))
 
-        for (let i = pos - 1; i > 0; i--) {
-            if (this.getWordStopCondition(i, startNonAscii)) {
-                start = i + 1 // Start is after the delimiter
-                break
-            }
-        }
+        // Iterate outward from `pos` in both directions
+        for (let i = 1; i < this.getLength(); i++) {
+            const left = pos - i
+            const right = pos + i
 
-        for (let i = pos + 1; i < this.getLength(); i++) {
-            if (this.getWordStopCondition(i, startNonAscii)) {
-                end = i
+            // Check the left side
+            if (left >= 0 && start === 0 && this.getWordStopCondition(left, startNonAscii)) {
+                start = left + 1 // Start is after the delimiter
+            }
+
+            // Check the right side
+            if (
+                right < this.getLength() &&
+                end === this.getLength() &&
+                this.getWordStopCondition(right, startNonAscii)
+            ) {
+                end = right
+            }
+
+            // Break early if both start and end are found
+            if (start !== 0 && end !== this.getLength()) {
                 break
             }
         }
@@ -939,8 +950,11 @@ export class TextInput {
     }
 
     private getWordStopCondition(i: number, startNonAscii: boolean): boolean {
-        return TextInput.DELIMITERS.has(this.at(i)) || (startNonAscii && !this.isHangul(this.at(i)))
-         || (!startNonAscii && this.isHangul(this.at(i)))
+        return (
+            TextInput.DELIMITERS.has(this.at(i)) ||
+            (startNonAscii && !this.isHangul(this.at(i))) ||
+            (!startNonAscii && this.isHangul(this.at(i)))
+        )
     }
 
     selectAllText() {
