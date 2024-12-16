@@ -600,6 +600,30 @@ class TextInput {
         }
     }
 
+    private onHome(keyEvent: KeyboardEvent) {
+        keyEvent.preventDefault();
+        const shiftKey = keyEvent.shiftKey;
+
+        if (shiftKey) {
+            const startPos = Math.max(this.selection[0], this.selection[1]);
+            this.extendSelection(startPos, 0);
+        } else {
+            this.onStartOfSelection();
+        }
+    }
+
+    private onEnd(keyEvent: KeyboardEvent) {
+        keyEvent.preventDefault();
+        const shiftKey = keyEvent.shiftKey;
+        
+        if (shiftKey) {
+            const startPos = Math.min(this.selection[0], this.selection[1]);
+            this.extendSelection(startPos, this.value.length);
+        } else {
+            this.onEndOfSelection();
+        }
+    }
+
     private onStartOfSelection() {
         this.moveSelection(0);
     }
@@ -873,11 +897,10 @@ class TextInput {
                 this.onCancelOfSelectionEnd();
                 break;
             case 'Home':
-                this.onStartOfSelection();
+                this.onHome(keyEvent);
                 break;
             case 'End':
-                keyEvent.preventDefault();
-                this.onEndOfSelection();
+                this.onEnd(keyEvent);
                 break;
             case ' ':
                 keyEvent.preventDefault();
