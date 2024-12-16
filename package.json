@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Canvas based text input field",
   "homepage": "https://github.com/bodguy/text-canvas-input-improved",
-  "packageManager": "pnpm@9.12.3",
   "repository": {
     "type": "git",
     "url": "git@github.com/bodguy/text-canvas-input-improved.git"
