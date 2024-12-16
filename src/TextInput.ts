@@ -951,6 +951,7 @@ export class TextInput {
 
     private getStopWordRange(pos: number): [number, number] {
         const startChar = this.at(pos)
+        if (!startChar) return [0, 0]
         const isDelimiterStart = TextInput.DELIMITERS.has(startChar)
 
         if (isDelimiterStart) {
