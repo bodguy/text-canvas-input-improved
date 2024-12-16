@@ -17,3 +17,4 @@ just run `npm run dev`
 - Alt 지우기 핸들링
 - onRight, onLeft alt+shift 선택 넘어가는 버그
 - Shift + Home, Shift + End 구현
+- 전체 선택시 선택 이동 불가 처리
