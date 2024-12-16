@@ -227,7 +227,6 @@ class TextInput {
     private startPos: number; // TODO: 텍스트내 보여줄 시작 위치
     private wasOver: boolean;
     private settings: typeof TextInput.defaultSettings;
-    private selectAll: boolean;
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -242,7 +241,6 @@ class TextInput {
         this.resetAssembleMode();
         this.startPos = 0;
         this.wasOver = false;
-        this.selectAll = false;
 
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true);
@@ -327,7 +325,6 @@ class TextInput {
 
     private moveSelection(position: number) {
         this.setSelection(position, position);
-        this.selectAll = false;
     }
 
     private setSelection(start: number, end: number) {
@@ -441,7 +438,6 @@ class TextInput {
     }
 
     private extendSelection(start: number, end: number) {
-        if (this.selectAll) return;
         this.setSelection(start, end);
     }
 
@@ -1029,7 +1025,6 @@ class TextInput {
 
     selectAllText() {
         this.extendSelection(0, this.value.length);
-        this.selectAll = true;
         this.resetAssembleMode();
     }
 
