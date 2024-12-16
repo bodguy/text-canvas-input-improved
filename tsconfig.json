@@ -27,7 +27,9 @@
     },
     "include": [
         "src",
-        "test"
+        "**/*.spec.ts",
+        "vite.config.ts",
+        "vitest.config.ts"
     ],
     "exclude": [
         "dist",

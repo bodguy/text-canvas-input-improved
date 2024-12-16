@@ -1,8 +1,13 @@
 import { defineConfig, UserConfigExport } from 'vite';
+import path from 'node:path'
 
 export default function (): UserConfigExport {
   return defineConfig({
-    resolve: {},
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, '/src')
+        }
+    },
     base: './',
     build: {
       outDir: 'dist'

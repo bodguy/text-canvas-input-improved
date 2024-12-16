@@ -14,7 +14,8 @@
     "dev": "vite --host",
     "build": "tsc && vite build",
     "predeploy": "pnpm build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "test": "vitest run"
   },
   "files": [
     "dist",
@@ -35,6 +36,10 @@
     "@bodguy:registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
-    "gh-pages": "^6.2.0"
+    "@types/node": "^22.10.2",
+    "gh-pages": "^6.2.0",
+    "jsdom": "^25.0.1",
+    "vitest": "^2.1.8",
+    "vitest-canvas-mock": "^0.3.3"
   }
 }
