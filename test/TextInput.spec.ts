@@ -13,4 +13,10 @@ describe('TextInput', () => {
         textInput.text = 'hello'
         expect(textInput.text).toBe('hello')
     })
+
+    it('stop non-ascii, consecutive delimiters, ascii', () => {
+        const sampleText = 'hello한글@@!!!world'
+        textInput.text = sampleText
+        // expect(textInput.)
+    })
 })

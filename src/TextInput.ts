@@ -31,8 +31,38 @@ export type TextInputSettings = {
 
 export class TextInput {
     private static DELIMITERS = new Set([
-        ' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?', '#', '$', '%', '^', '&', '*', '(', ')', '!', '@',
-        '+', '=', '|', '~', '`', '{', '}', '"', '\'', '<', '>'
+        ' ',
+        ',',
+        '.',
+        ';',
+        ':',
+        '/',
+        '[',
+        ']',
+        '-',
+        '\\',
+        '?',
+        '#',
+        '$',
+        '%',
+        '^',
+        '&',
+        '*',
+        '(',
+        ')',
+        '!',
+        '@',
+        '+',
+        '=',
+        '|',
+        '~',
+        '`',
+        '{',
+        '}',
+        '"',
+        "'",
+        '<',
+        '>'
     ])
     private static KOREAN_TO_ENGLISH: Record<string, string> = {
         ㅁ: 'a',
@@ -920,17 +950,34 @@ export class TextInput {
     }
 
     private getStopWordRange(pos: number): [number, number] {
-        let start = 0
-        let end = this.getLength()
-        const startNonAscii = this.isHangul(this.at(pos))
+        const startChar = this.at(pos)
+        const isDelimiterStart = TextInput.DELIMITERS.has(startChar)
+
+        if (isDelimiterStart) {
+            // Expand the range for consecutive *same-type* delimiters
+            let start = pos
+            let end = pos + 1
+            while (start > 0 && TextInput.DELIMITERS.has(this.at(start - 1)) && this.at(start - 1) === startChar) {
+                start--
+            }
+            while (end < this.getLength() && TextInput.DELIMITERS.has(this.at(end)) && this.at(end) === startChar) {
+                end++
+            }
+
+            return [start, end]
+        }
 
         // Iterate outward from `pos` in both directions
+        let start = 0
+        let end = this.getLength()
+        const isNonAsciiStart = this.isHangul(startChar)
+
         for (let i = 1; i < this.getLength(); i++) {
             const left = pos - i
             const right = pos + i
 
             // Check the left side
-            if (left >= 0 && start === 0 && this.getWordStopCondition(left, startNonAscii)) {
+            if (left >= 0 && start === 0 && this.getWordStopCondition(left, isNonAsciiStart)) {
                 start = left + 1 // Start is after the delimiter
             }
 
@@ -938,7 +985,7 @@ export class TextInput {
             if (
                 right < this.getLength() &&
                 end === this.getLength() &&
-                this.getWordStopCondition(right, startNonAscii)
+                this.getWordStopCondition(right, isNonAsciiStart)
             ) {
                 end = right
             }
@@ -952,11 +999,13 @@ export class TextInput {
         return [start, end]
     }
 
-    private getWordStopCondition(i: number, startNonAscii: boolean): boolean {
+    private getWordStopCondition(i: number, isNonAsciiStart: boolean): boolean {
+        // Stop condition for non-delimiter characters
+        const char = this.at(i)
         return (
-            TextInput.DELIMITERS.has(this.at(i)) ||
-            (startNonAscii && !this.isHangul(this.at(i))) ||
-            (!startNonAscii && this.isHangul(this.at(i)))
+            TextInput.DELIMITERS.has(char) ||
+            (isNonAsciiStart && !this.isHangul(char)) ||
+            (!isNonAsciiStart && this.isHangul(char))
         )
     }
 
