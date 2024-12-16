@@ -30,7 +30,10 @@ export type TextInputSettings = {
 }
 
 export class TextInput {
-    private static DELIMITERS = new Set([' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?', '!', '@'])
+    private static DELIMITERS = new Set([
+        ' ', ',', '.', ';', ':', '/', '[', ']', '-', '\\', '?', '#', '$', '%', '^', '&', '*', '(', ')', '!', '@',
+        '+', '=', '|', '~', '`', '{', '}', '"', '\'', '<', '>'
+    ])
     private static KOREAN_TO_ENGLISH: Record<string, string> = {
         ㅁ: 'a',
         ㄴ: 's',
