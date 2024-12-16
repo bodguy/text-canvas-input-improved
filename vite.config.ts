@@ -3,7 +3,7 @@ import { defineConfig, UserConfigExport } from 'vite';
 export default function (): UserConfigExport {
   return defineConfig({
     resolve: {},
-    base: '/',
+    base: './',
     build: {
       outDir: 'dist'
     },
