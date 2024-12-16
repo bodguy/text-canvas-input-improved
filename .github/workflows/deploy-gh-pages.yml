@@ -5,11 +5,8 @@ on:
     branches: ["gh-pages"]
 
 jobs:
-  build:
+  build-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -21,5 +18,5 @@ jobs:
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{secrets.GITHUB_TOKEN}}
           publish_dir: ./dist
