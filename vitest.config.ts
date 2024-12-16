@@ -9,12 +9,23 @@ export default defineConfig({
     },
     test: {
         globals: true,
+        setupFiles: ['./vitest.setup.ts'],
         environment: 'jsdom',
         deps: {
             optimizer: {
                 web: {
                     include: ['vitest-canvas-mock']
                 }
+            }
+        },
+        poolOptions: {
+            threads: {
+                singleThread: true
+            }
+        },
+        environmentOptions: {
+            jsdom: {
+                resources: 'usable'
             }
         },
         coverage: {

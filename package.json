@@ -15,7 +15,9 @@
     "build": "tsc && vite build",
     "predeploy": "pnpm build",
     "deploy": "gh-pages -d dist",
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "code:lint": "biome format . --write"
   },
   "files": [
     "dist",
@@ -34,12 +36,14 @@
     "@bodguy:registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.2",
+    "@vitest/coverage-v8": "^2.1.8",
     "gh-pages": "^6.2.0",
     "jsdom": "^25.0.1",
-    "vitest": "^2.1.8",
-    "vitest-canvas-mock": "^0.3.3",
     "typescript": "^5.7.2",
-    "vite": "^6.0.1"
+    "vite": "^6.0.1",
+    "vitest": "^2.1.8",
+    "vitest-canvas-mock": "^0.3.3"
   }
 }

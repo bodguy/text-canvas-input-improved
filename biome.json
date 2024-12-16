@@ -1,0 +1,47 @@
+{
+    "$schema": "node_modules/@biomejs/biome/configuration_schema.json",
+    "organizeImports": {
+        "enabled": true
+    },
+    "files": {
+        "ignore": ["./dev-dist", "./dist", "./**/*.js", "./**/*.json", "./node_modules/**/*.*"]
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "suspicious": {
+                "noExplicitAny": "warn",
+                "noExtraNonNullAssertion": "off"
+            },
+            "style": {
+                "useShorthandArrayType": "off",
+                "noInferrableTypes": "off",
+                "noNonNullAssertion": "off",
+                "useImportType": "off",
+                "noUselessElse": "warn",
+                "useEnumInitializers": "off"
+            },
+            "complexity": {
+                "noForEach": "warn",
+                "noStaticOnlyClass": "off"
+            }
+        },
+        "ignore": ["./dev-dist", "./dist", "./**/*.js", "./**/*.json", "./node_modules/**/*.*"]
+    },
+    "formatter": {
+        "enabled": true,
+        "formatWithErrors": false,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120,
+        "ignore": ["./dev-dist", "./dist", "./**/*.js", "./**/*.json", "./node_modules/**/*.*"]
+    },
+    "javascript": {
+        "formatter": {
+            "semicolons": "asNeeded",
+            "trailingCommas": "none",
+            "quoteStyle": "single"
+        }
+    }
+}
