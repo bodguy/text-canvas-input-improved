@@ -12,7 +12,9 @@
   "author": "bodguy <alsrudgns99@gmail.com> (https://github.com/bodguy)",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "predeploy": "pnpm build",
+    "deploy": "gh-pages -d dist"
   },
   "files": [
     "dist",
