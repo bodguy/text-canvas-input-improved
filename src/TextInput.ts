@@ -229,19 +229,6 @@ export class TextInput {
         this.blinkTimer += deltaTime
     }
 
-    private moveSelection(position: number) {
-        this.setSelection(position, position)
-    }
-
-    private setSelection(start: number, end: number) {
-        start = this.clamp(start, 0, this.value.length)
-        end = this.clamp(end, 0, this.value.length)
-
-        this.selection[0] = start
-        this.selection[1] = end
-        this.blinkTimer = this.settings.caretBlinkRate
-    }
-
     isSelected(): boolean {
         return this.selection[0] !== this.selection[1]
     }
@@ -303,6 +290,23 @@ export class TextInput {
         this.onCancelOfSelectionEnd()
     }
 
+    private moveSelection(position: number) {
+        this.setSelection(position, position)
+    }
+
+    private setSelection(start: number, end: number) {
+        start = this.clamp(start, 0, this.getLength())
+        end = this.clamp(end, 0, this.getLength())
+
+        this.selection[0] = start
+        this.selection[1] = end
+        this.blinkTimer = this.settings.caretBlinkRate
+    }
+
+    private at(i: number): string {
+        return this.value[i]
+    }
+
     private getDrawText(str: string): string {
         return this.type === 'password' ? this.settings.passwordChar.repeat(str.length) : str
     }
@@ -361,7 +365,7 @@ export class TextInput {
 
     private extendRightBoundary() {
         const rightBoundary = Math.min(this.selection[0], this.selection[1])
-        this.extendSelection(rightBoundary, this.value.length)
+        this.extendSelection(rightBoundary, this.getLength())
     }
 
     private extendLeftBoundary() {
@@ -385,7 +389,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the right by word
-                        const nextCurPos = this.getNearestWordIndex(this.selection[1])[1]
+                        const nextCurPos = this.getStopWordRange(this.selection[1])[1]
                         this.extendSelection(this.selection[0], nextCurPos)
                     } else {
                         // Extend selection to the right by one character
@@ -405,7 +409,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = this.getNearestWordIndex(this.selection[1])[1]
+            const nextCurPos = this.getStopWordRange(this.selection[1])[1]
 
             if (shiftKey) {
                 // If shift is pressed, extend the selection to the next word boundary
@@ -420,7 +424,7 @@ export class TextInput {
         // meta/control key is pressed
         if (metaKey || controlKey) {
             if (shiftKey) {
-                this.extendSelection(this.selection[0], this.value.length)
+                this.extendSelection(this.selection[0], this.getLength())
             } else {
                 // Move cursor to the end of the text
                 this.onEndOfSelection()
@@ -454,7 +458,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the left by word
-                        const nextCurPos = this.getNearestWordIndex(this.selection[1] - 1)[0]
+                        const nextCurPos = this.getStopWordRange(this.selection[1] - 1)[0]
                         this.extendSelection(this.selection[0], nextCurPos)
                     } else {
                         // Extend selection to the left by one character
@@ -474,7 +478,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = this.getNearestWordIndex(this.selection[0] - 1)[0]
+            const nextCurPos = this.getStopWordRange(this.selection[0] - 1)[0]
 
             if (shiftKey) {
                 this.extendSelection(this.selection[1], nextCurPos)
@@ -524,7 +528,7 @@ export class TextInput {
 
         if (shiftKey) {
             const startPos = Math.min(this.selection[0], this.selection[1])
-            this.extendSelection(startPos, this.value.length)
+            this.extendSelection(startPos, this.getLength())
         } else {
             this.onEndOfSelection()
         }
@@ -535,7 +539,7 @@ export class TextInput {
     }
 
     private onEndOfSelection() {
-        this.moveSelection(this.value.length)
+        this.moveSelection(this.getLength())
     }
 
     private onCancelOfSelectionStart() {
@@ -604,7 +608,7 @@ export class TextInput {
 
     private isMaxLengthOverflow(newValue: string = ''): boolean {
         if (this.maxLength === -1) return false
-        return this.value.length + newValue.length > this.maxLength
+        return this.getLength() + newValue.length > this.maxLength
     }
 
     private isNumeric(value: string): boolean {
@@ -751,11 +755,11 @@ export class TextInput {
     private textPos(x: number, y: number) {
         const boundX = x - this.area().x
         let totalWidth = 0
-        let pos = this.value.length
+        let pos = this.getLength()
 
         if (boundX < this.measureText(this.value)) {
-            for (let i = 0; i < this.value.length; i++) {
-                totalWidth += this.measureText(this.value[i])
+            for (let i = 0; i < this.getLength(); i++) {
+                totalWidth += this.measureText(this.at(i))
                 if (totalWidth >= boundX) {
                     pos = i
                     break
@@ -888,7 +892,7 @@ export class TextInput {
 
         if (leftButton && this.contains(mousePos.x, mousePos.y)) {
             const curPos = this.textPos(mousePos.x, mousePos.y)
-            const [start, end] = this.getNearestWordIndex(curPos)
+            const [start, end] = this.getStopWordRange(curPos)
             this.extendSelection(start, end)
         }
     }
@@ -912,19 +916,20 @@ export class TextInput {
         this.moveSelection(before.length)
     }
 
-    private getNearestWordIndex(pos: number): [number, number] {
+    private getStopWordRange(pos: number): [number, number] {
         let start = 0
-        let end = this.value.length
+        let end = this.getLength()
+        const startNonAscii = this.isHangul(this.at(pos))
 
         for (let i = pos - 1; i > 0; i--) {
-            if (TextInput.DELIMITERS.has(this.value[i])) {
+            if (this.getWordStopCondition(i, startNonAscii)) {
                 start = i + 1 // Start is after the delimiter
                 break
             }
         }
 
-        for (let i = pos + 1; i < this.value.length; i++) {
-            if (TextInput.DELIMITERS.has(this.value[i])) {
+        for (let i = pos + 1; i < this.getLength(); i++) {
+            if (this.getWordStopCondition(i, startNonAscii)) {
                 end = i
                 break
             }
@@ -933,8 +938,13 @@ export class TextInput {
         return [start, end]
     }
 
+    private getWordStopCondition(i: number, startNonAscii: boolean): boolean {
+        return TextInput.DELIMITERS.has(this.at(i)) || (startNonAscii && !this.isHangul(this.at(i)))
+         || (!startNonAscii && this.isHangul(this.at(i)))
+    }
+
     selectAllText() {
-        this.extendSelection(0, this.value.length)
+        this.extendSelection(0, this.getLength())
         this.resetAssembleMode()
     }
 
@@ -942,7 +952,7 @@ export class TextInput {
         const start = Math.min(this.selection[0], this.selection[1])
         const end = Math.max(this.selection[0], this.selection[1])
         const before = this.getSubText(0, start)
-        const after = this.getSubText(end, this.value.length)
+        const after = this.getSubText(end, this.getLength())
         return [before, after]
     }
 
@@ -951,11 +961,11 @@ export class TextInput {
     }
 
     private getAssemblePosChar(): string {
-        return this.getSubText(this.assemblePos, Math.min(this.assemblePos + 1, this.value.length))
+        return this.getSubText(this.assemblePos, Math.min(this.assemblePos + 1, this.getLength()))
     }
 
     private getAssemblePosAfter(): string {
-        return this.getSubText(Math.min(this.assemblePos + 1, this.value.length), this.value.length)
+        return this.getSubText(Math.min(this.assemblePos + 1, this.getLength()), this.getLength())
     }
 
     area(): { x: number; y: number; w: number; h: number } {
