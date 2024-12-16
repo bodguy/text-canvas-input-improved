@@ -11,7 +11,7 @@
   "type": "module",
   "author": "bodguy <alsrudgns99@gmail.com> (https://github.com/bodguy)",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc && vite build"
   },
   "files": [
