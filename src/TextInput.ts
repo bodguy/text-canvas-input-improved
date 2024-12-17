@@ -412,6 +412,7 @@ export class TextInput {
         const shiftKey = keyEvent.shiftKey
         const metaKey = keyEvent.metaKey
         const controlKey = keyEvent.ctrlKey
+        const isPassword = this.type === 'password'
         this.resetAssembleMode()
 
         if (this.isSelected()) {
@@ -422,7 +423,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the right by word
-                        const nextCurPos = this.getStopWordRange(this.selection[1])[1]
+                        const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[1])[1] : this.getLength()
                         this.extendSelection(this.selection[0], nextCurPos)
                     } else {
                         // Extend selection to the right by one character
@@ -442,7 +443,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = this.getStopWordRange(this.selection[1])[1]
+            const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[1])[1] : this.getLength()
 
             if (shiftKey) {
                 // If shift is pressed, extend the selection to the next word boundary
@@ -481,6 +482,7 @@ export class TextInput {
         const shiftKey = keyEvent.shiftKey
         const metaKey = keyEvent.metaKey
         const controlKey = keyEvent.ctrlKey
+        const isPassword = this.type === 'password'
         this.resetAssembleMode()
 
         if (this.isSelected()) {
@@ -491,7 +493,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the left by word
-                        const nextCurPos = this.getStopWordRange(this.selection[1] - 1)[0]
+                        const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[1] - 1)[0] : 0
                         this.extendSelection(this.selection[0], nextCurPos)
                     } else {
                         // Extend selection to the left by one character
@@ -511,7 +513,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = this.getStopWordRange(this.selection[0] - 1)[0]
+            const nextCurPos = !isPassword? this.getStopWordRange(this.selection[0] - 1)[0] : 0
 
             if (shiftKey) {
                 this.extendSelection(this.selection[1], nextCurPos)
