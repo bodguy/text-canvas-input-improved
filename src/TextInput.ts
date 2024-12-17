@@ -719,11 +719,36 @@ export class TextInput {
         this.moveSelection(lastCurPos)
         this.resetAssembleMode()
     }
+    
+    private onRemoveBackward(keyEvent: KeyboardEvent) {
+        keyEvent.preventDefault()
 
-    private onRemove(keyEvent: KeyboardEvent) {
+        const altKey = keyEvent.altKey
+
+        if (this.isSelected()) {
+            // If text is selected, remove the selected text
+            const [before, after] = this.getSelectionOutside()
+            this.text = before + after
+            this.moveSelection(before.length)
+            return
+        }
+
+        if (this.isAssembleMode()) {
+            this.resetAssembleMode()
+        }
+
+        // If no text is selected, remove the character 'after' the cursor
+        const [before, after] = this.getSelectionOutside()
+        const newAfter = after.slice(1)
+        this.text = before + newAfter
+        this.moveSelection(before.length)
+    }
+
+    private onRemoveForward(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault()
 
         const metaKey = keyEvent.metaKey
+        const altKey = keyEvent.altKey
 
         if (this.isSelected()) {
             // If text is selected, remove the selected text
@@ -749,7 +774,7 @@ export class TextInput {
             return
         }
 
-        // If no text is selected, remove the character before the cursor
+        // If no text is selected, remove the character 'before' the cursor
         const [before, after] = this.getSelectionOutside()
         const newBefore = before.slice(0, metaKey ? before.length * -1 : -1)
         this.text = newBefore + after
@@ -832,7 +857,10 @@ export class TextInput {
                 this.settings.enterCallback(keyEvent)
                 break
             case 'Backspace':
-                this.onRemove(keyEvent)
+                this.onRemoveForward(keyEvent)
+                break
+            case 'Delete':
+                this.onRemoveBackward(keyEvent)
                 break
             case 'ArrowRight':
                 this.onRight(keyEvent)
