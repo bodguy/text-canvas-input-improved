@@ -648,35 +648,36 @@ export class TextInput {
         return /^-?\d+$/.test(value)
     }
 
-    private appendValue(value: string, resetAssemble: boolean = false) {
+    private handleMaxLengthOverflow(value: string) {
+        const [before, after] = this.getSelectionOutside()
+
+        // Calculate the remaining allowed length
+        const remainingLength = this.settings.maxLength - (before.length + after.length)
+
+        // Trim the value to fit within the remaining allowed length
+        const newValue = value.substring(0, remainingLength)
+
+        // Handle input as the non-Hangul only if there's still space
+        if (newValue.length > 0) {
+            this.handleNonHangul(before, newValue, after)
+        }
+    }
+
+    private appendValue(value: string) {
         if (this.type === 'number' && !this.isNumeric(value)) {
+            return
+        }
+
+        if (this.isMaxLengthOverflow(value)) {
+            this.handleMaxLengthOverflow(value)
             return
         }
 
         const [before, after] = this.getSelectionOutside()
 
-        if (this.isMaxLengthOverflow(value)) {
-            // Calculate the remaining allowed length
-            const remainingLength = this.settings.maxLength - (before.length + after.length)
-
-            // Trim the value to fit within the remaining allowed length
-            const newValue = value.substring(0, remainingLength)
-
-            // Handle input as the non-Hangul only if there's still space
-            if (newValue.length > 0) {
-                this.handleNonHangul(before, newValue, after)
-            }
-
-            return
-        }
-
         if (this.isHangul(value)) {
             // Handle Hangul input
             this.handleHangul(before, value, after)
-
-            if (resetAssemble) {
-                this.resetAssembleMode()
-            }
         } else {
             // Handle non-Hangul input
             this.handleNonHangul(before, value, after)
@@ -966,7 +967,19 @@ export class TextInput {
     private async onPaste(event: ClipboardEvent) {
         if (!this.isFocused) return
         const text = await navigator.clipboard.readText()
-        this.appendValue(text, true)
+
+        if (this.type === 'number' && !this.isNumeric(text)) {
+            return
+        }
+
+        if (this.isMaxLengthOverflow(text)) {
+            this.handleMaxLengthOverflow(text)
+            return
+        }
+
+        const [before, after] = this.getSelectionOutside()
+        // Handle paste text as non-Hangul
+        this.handleNonHangul(before, text, after)
     }
 
     private async onCut(event: ClipboardEvent) {
@@ -980,9 +993,8 @@ export class TextInput {
     private getStopWordRange(pos: number): [number, number] {
         const startChar = this.at(pos)
         if (!startChar) return [pos, pos]
-        const isDelimiterStart = TextInput.DELIMITERS.has(startChar)
 
-        if (isDelimiterStart) {
+        if (TextInput.DELIMITERS.has(startChar)) {
             // Expand the range for consecutive *same-type* delimiters
             let start = pos
             let end = pos + 1
@@ -990,6 +1002,20 @@ export class TextInput {
                 start--
             }
             while (end < this.getLength() && TextInput.DELIMITERS.has(this.at(end)) && this.at(end) === startChar) {
+                end++
+            }
+
+            return [start, end]
+        }
+
+        if (this.isNotCompleteHangul(startChar)) {
+            // Expand the range for consecutive not complete hangul
+            let start = pos
+            let end = pos + 1
+            while (start > 0 && this.isNotCompleteHangul(this.at(start - 1))) {
+                start--
+            }
+            while (end < this.getLength() && this.isNotCompleteHangul(this.at(end))) {
                 end++
             }
 
@@ -1033,9 +1059,13 @@ export class TextInput {
         const char = this.at(i)
         return (
             TextInput.DELIMITERS.has(char) ||
-            (isNonAsciiStart && !this.isHangul(char)) ||
+            (isNonAsciiStart && (!this.isHangul(char) || this.isNotCompleteHangul(char))) ||
             (!isNonAsciiStart && this.isHangul(char))
         )
+    }
+
+    private isNotCompleteHangul(char: string): boolean {
+        return this.isHangul(char) && !Hangul.isComplete(char)
     }
 
     selectAllText() {
