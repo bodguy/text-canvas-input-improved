@@ -279,7 +279,8 @@ export class TextInput {
     }
 
     set text(value: string) {
-        this.value = value
+        this.value = ''
+        this.onSetText(value)
     }
 
     get text(): string {
@@ -374,6 +375,10 @@ export class TextInput {
 
     getSelectionText(): string {
         return this.getSubText(this.selection[0], this.selection[1])
+    }
+
+    getSelection(): [number, number] {
+        return this.selection
     }
 
     getSubText(start: number, end: number) {
@@ -710,7 +715,7 @@ export class TextInput {
     }
 
     private assembleHangul(beforeValue: string, newValue: string, afterValue: string) {
-        this.text = beforeValue + newValue + afterValue
+        this.value = beforeValue + newValue + afterValue
         const selectionPos = beforeValue.length + newValue.length
         this.moveSelection(selectionPos)
         this.setAssemblePos(selectionPos - 1)
@@ -718,7 +723,7 @@ export class TextInput {
 
     private handleNonHangul(before: string, value: string, after: string) {
         const lastCurPos = before.length + value.length
-        this.text = before + value + after
+        this.value = before + value + after
         this.moveSelection(lastCurPos)
         this.resetAssembleMode()
     }
@@ -731,7 +736,7 @@ export class TextInput {
         if (this.isSelected()) {
             // If text is selected, remove the selected text
             const [before, after] = this.getSelectionOutside()
-            this.text = before + after
+            this.value = before + after
             this.moveSelection(before.length)
             return
         }
@@ -743,7 +748,7 @@ export class TextInput {
         // If no text is selected, remove the character 'after' the cursor
         const [before, after] = this.getSelectionOutside()
         const newAfter = after.slice(1)
-        this.text = before + newAfter
+        this.value = before + newAfter
         this.moveSelection(before.length)
     }
 
@@ -756,7 +761,7 @@ export class TextInput {
         if (this.isSelected()) {
             // If text is selected, remove the selected text
             const [before, after] = this.getSelectionOutside()
-            this.text = before + after
+            this.value = before + after
             this.moveSelection(before.length)
             return
         }
@@ -772,7 +777,7 @@ export class TextInput {
             }
 
             const prefix = before + assembled
-            this.text = prefix + after
+            this.value = prefix + after
             this.moveSelection(prefix.length)
             return
         }
@@ -780,7 +785,7 @@ export class TextInput {
         // If no text is selected, remove the character 'before' the cursor
         const [before, after] = this.getSelectionOutside()
         const newBefore = before.slice(0, metaKey ? before.length * -1 : -1)
-        this.text = newBefore + after
+        this.value = newBefore + after
         this.moveSelection(newBefore.length)
     }
 
@@ -973,7 +978,10 @@ export class TextInput {
     private async onPaste(event: ClipboardEvent) {
         if (!this.isFocused) return
         const text = await navigator.clipboard.readText()
+        this.onSetText(text)
+    }
 
+    private onSetText(text: string) {
         if (this.type === 'number' && !this.isNumeric(text)) {
             return
         }
@@ -984,7 +992,6 @@ export class TextInput {
         }
 
         const [before, after] = this.getSelectionOutside()
-        // Handle paste text as non-Hangul
         this.handleNonHangul(before, text, after)
     }
 
@@ -992,7 +999,7 @@ export class TextInput {
         if (!this.isFocused || this.type === 'password' || this.isEmpty()) return
         await navigator.clipboard.writeText(this.getSelectionText())
         const [before, after] = this.getSelectionOutside()
-        this.text = before + after
+        this.value = before + after
         this.moveSelection(before.length)
     }
 
