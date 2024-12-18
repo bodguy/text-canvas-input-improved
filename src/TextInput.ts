@@ -372,11 +372,11 @@ export class TextInput {
         return Math.floor(this.blinkTimer / this.settings.caretBlinkRate) % 2
     }
 
-    private getSelectionText(): string {
+    getSelectionText(): string {
         return this.getSubText(this.selection[0], this.selection[1])
     }
 
-    private getSubText(start: number, end: number) {
+    getSubText(start: number, end: number) {
         return this.value.substring(start, end)
     }
 
