@@ -1,18 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach  } from 'vitest'
 import { TextInput } from '@/TextInput'
+import { keydownEvent } from './TestUtil'
+import {  } from 'node:test'
 
 describe('TextInput', () => {
     const canvas = document.createElement('canvas')
     const textInput = new TextInput({}, canvas)
-    textInput.focus = true
 
-    function keydownEvent(key: string, altKey: boolean = false, shiftKey: boolean = false, metaKey: boolean = false) {
-        const keyEvent = new KeyboardEvent('keydown', { key, altKey, shiftKey, metaKey })
-        document.dispatchEvent(keyEvent)
-    }
+    beforeEach(() => {
+        textInput.focus = true
+    })
 
-    it('jsdom working test', () => {
-        expect(typeof window).not.toBe('undefined')
+    afterEach(() => {
+        textInput.text = ''
     })
 
     it('set value and check test', () => {
@@ -20,7 +20,7 @@ describe('TextInput', () => {
         expect(textInput.text).toBe('hello')
     })
 
-    it('selection test: stop non-ascii, consecutive delimiters and ascii test', () => {
+    it('selection stop non-ascii, consecutive delimiters and ascii test', () => {
         textInput.text = 'hello한글@@!!!world'
 
         expect(textInput.isSelected()).toBeFalsy()
