@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach  } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { TextInput } from '@/TextInput'
 import { keydownEvent } from './TestUtil'
 
@@ -82,7 +82,7 @@ describe('TextInput', () => {
         keydownEvent('ArrowLeft')
         expect(textInput.getSelection()).toStrictEqual([0, 0])
     })
-    
+
     it('should delete text correctly after entering and backspacing', () => {
         keydownEvent('a')
         keydownEvent('b')
@@ -137,7 +137,7 @@ describe('TextInput', () => {
         keydownEvent('Delete')
         expect(textInput.isEmpty()).toBeTruthy()
     })
-    
+
     it('insert text in the middle of existing text', () => {
         textInput.text = 'hello world'
         keydownEvent('Home')
@@ -147,7 +147,7 @@ describe('TextInput', () => {
         keydownEvent('X')
         expect(textInput.text).toBe('helloX world')
     })
-    
+
     it('delete selected text', () => {
         textInput.text = 'hello world'
         textInput.selectAllText()
@@ -155,7 +155,7 @@ describe('TextInput', () => {
         expect(textInput.text).toBe('')
         expect(textInput.isEmpty()).toBeTruthy()
     })
-    
+
     it('handle selection wraparound', () => {
         textInput.text = 'hello world'
         keydownEvent('Home')
@@ -163,7 +163,7 @@ describe('TextInput', () => {
         keydownEvent('ArrowLeft', true, true)
         expect(textInput.getSelection()).toStrictEqual([0, 0])
     })
-    
+
     it('handle consecutive Backspace actions', () => {
         textInput.text = 'abcde'
         for (let i = 0; i < 5; i++) {
@@ -172,7 +172,7 @@ describe('TextInput', () => {
         expect(textInput.text).toBe('')
         expect(textInput.isEmpty()).toBeTruthy()
     })
-    
+
     it('handle consecutive Delete actions', () => {
         textInput.text = 'abcde'
         keydownEvent('Home')
@@ -182,35 +182,35 @@ describe('TextInput', () => {
         expect(textInput.text).toBe('')
         expect(textInput.isEmpty()).toBeTruthy()
     })
-    
+
     it('cursor at the start of text with Delete', () => {
         textInput.text = 'hello'
         keydownEvent('Home')
         keydownEvent('Delete')
         expect(textInput.text).toBe('ello')
     })
-    
+
     it('cursor at the end of text with Backspace', () => {
         textInput.text = 'hello'
         keydownEvent('End')
         keydownEvent('Backspace')
         expect(textInput.text).toBe('hell')
     })
-    
+
     it('Shift + ArrowLeft at start should do nothing', () => {
         textInput.text = 'hello world'
         keydownEvent('Home')
         keydownEvent('ArrowLeft', false, true)
         expect(textInput.getSelection()).toStrictEqual([0, 0])
     })
-    
+
     it('Shift + ArrowRight at end should do nothing', () => {
         textInput.text = 'hello world'
         keydownEvent('End')
         keydownEvent('ArrowRight', false, true)
         expect(textInput.getSelection()).toStrictEqual([textInput.getLength(), textInput.getLength()])
     })
-    
+
     it('insert Hangul characters in between existing text', () => {
         textInput.text = 'hello world'
         keydownEvent('Home')
@@ -222,7 +222,7 @@ describe('TextInput', () => {
         keydownEvent('ㄴ')
         expect(textInput.text).toBe('hello한 world')
     })
-    
+
     it('delete Hangul character parts', () => {
         keydownEvent('ㅎ')
         keydownEvent('ㅏ')
@@ -234,7 +234,7 @@ describe('TextInput', () => {
         keydownEvent('Backspace')
         expect(textInput.text).toBe('')
     })
-    
+
     it('delete Hangul character from the middle of text', () => {
         textInput.text = 'hello한world'
         keydownEvent('Home')
@@ -244,28 +244,28 @@ describe('TextInput', () => {
         keydownEvent('Delete')
         expect(textInput.text).toBe('helloworld')
     })
-    
+
     it('backspace at start of text should do nothing', () => {
         textInput.text = 'hello world'
         keydownEvent('Home')
         keydownEvent('Backspace')
         expect(textInput.text).toBe('hello world')
     })
-    
+
     it('delete at end of text should do nothing', () => {
         textInput.text = 'hello world'
         keydownEvent('End')
         keydownEvent('Delete')
         expect(textInput.text).toBe('hello world')
     })
-    
+
     it('select text and overwrite with new input', () => {
         textInput.text = 'hello world'
         textInput.selectAllText()
         keydownEvent('X')
         expect(textInput.text).toBe('X')
     })
-    
+
     it('delete part of selection', () => {
         textInput.text = 'hello world'
         textInput.selectAllText()
@@ -273,7 +273,7 @@ describe('TextInput', () => {
         keydownEvent('Backspace')
         expect(textInput.text).toBe('world')
     })
-    
+
     it('replace a part of selection with Hangul', () => {
         textInput.text = 'hello world'
         textInput.selectAllText()
@@ -282,5 +282,33 @@ describe('TextInput', () => {
         keydownEvent('ㅏ')
         keydownEvent('ㄴ')
         expect(textInput.text).toBe('한world')
+    })
+
+    it('should stop start caret position when Alt + Right key down', () => {
+        textInput.text = 'hello world'
+        keydownEvent('Home')
+        for (let i = 0; i < 4; i++) {
+            keydownEvent('ArrowRight')
+        }
+        keydownEvent('ArrowLeft', true, true)
+        expect(textInput.getSelection()).toStrictEqual([4, 0])
+        keydownEvent('ArrowRight', true, true)
+        expect(textInput.getSelection()).toStrictEqual([4, 4])
+        keydownEvent('ArrowRight', true, true)
+        expect(textInput.getSelection()).toStrictEqual([4, 5])
+    })
+
+    it('should stop start caret position when Alt + Left key down', () => {
+        textInput.text = 'hello world'
+        keydownEvent('Home')
+        for (let i = 0; i < 4; i++) {
+            keydownEvent('ArrowRight')
+        }
+        keydownEvent('ArrowRight', true, true)
+        expect(textInput.getSelection()).toStrictEqual([4, 5])
+        keydownEvent('ArrowLeft', true, true)
+        expect(textInput.getSelection()).toStrictEqual([4, 4])
+        keydownEvent('ArrowLeft', true, true)
+        expect(textInput.getSelection()).toStrictEqual([4, 0])
     })
 })

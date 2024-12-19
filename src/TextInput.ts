@@ -428,8 +428,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the right by word
-                        const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[1])[1] : this.getLength()
-                        this.extendSelection(this.selection[0], nextCurPos)
+                        this.extendSelection(this.selection[0], this.getNextStopPosition(false, isPassword))
                     } else {
                         // Extend selection to the right by one character
                         this.extendSelection(this.selection[0], this.selection[1] + 1)
@@ -498,8 +497,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the left by word
-                        const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[1] - 1)[0] : 0
-                        this.extendSelection(this.selection[0], nextCurPos)
+                        this.extendSelection(this.selection[0], this.getNextStopPosition(true, isPassword))
                     } else {
                         // Extend selection to the left by one character
                         this.extendSelection(this.selection[0], this.selection[1] - 1)
@@ -518,7 +516,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = !isPassword? this.getStopWordRange(this.selection[0] - 1)[0] : 0
+            const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[0] - 1)[0] : 0
 
             if (shiftKey) {
                 this.extendSelection(this.selection[1], nextCurPos)
@@ -548,6 +546,33 @@ export class TextInput {
             // Move cursor without extending selection
             this.moveSelection(this.selection[1] - 1)
         }
+    }
+
+    private getNextStopPosition(isLeft: boolean, isPassword: boolean): number {
+        if (isPassword) {
+            return isLeft ? 0 : this.getLength()
+        }
+
+        const stopPosition = isLeft
+            ? this.getStopWordRange(this.selection[1] - 1)[0]
+            : this.getStopWordRange(this.selection[1])[1]
+
+        if (
+            (isLeft && this.isRightDirection() && stopPosition < this.selection[0]) ||
+            (!isLeft && this.isLeftDirection() && stopPosition > this.selection[0])
+        ) {
+            return this.selection[0]
+        }
+
+        return stopPosition
+    }
+
+    private isRightDirection(): boolean {
+        return this.selection[0] < this.selection[1]
+    }
+
+    private isLeftDirection(): boolean {
+        return this.selection[0] > this.selection[1]
     }
 
     private onHome(keyEvent: KeyboardEvent) {
@@ -727,7 +752,7 @@ export class TextInput {
         this.moveSelection(lastCurPos)
         this.resetAssembleMode()
     }
-    
+
     private onRemoveBackward(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault()
 

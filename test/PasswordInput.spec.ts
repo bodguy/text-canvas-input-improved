@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach  } from 'vitest'
+import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { TextInput } from '@/TextInput'
 import { keydownEvent, doubleClickEvent } from './TestUtil'
 
