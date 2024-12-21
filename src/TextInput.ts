@@ -1003,12 +1003,12 @@ export class TextInput {
         const mousePos = this.getMousePos(event)
 
         if (leftButton && this.contains(mousePos.x, mousePos.y)) {
-            if (this.type !== 'password') {
+            if (this.isPassword()) {
+                this.selectAllText()
+            } else {
                 const curPos = this.textPos(mousePos.x, mousePos.y)
                 const [start, end] = this.getStopWordRange(curPos)
                 this.extendSelection(start, end)
-            } else {
-                this.selectAllText()
             }
         }
     }
