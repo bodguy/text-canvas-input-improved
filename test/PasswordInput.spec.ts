@@ -34,4 +34,18 @@ describe('PasswordInput', () => {
         // doubleClickEvent()
         // expect(passwordInput.getSelection()).toStrictEqual([0, passwordInput.getLength()])
     })
+
+    it('should delete backward stop position when pressing Alt + Delete', () => {
+        passwordInput.text = '한글 abcdㅁㄴㅁ!!!@@'
+        keydownEvent('Home')
+        keydownEvent('Delete', true)
+        expect(passwordInput.text).toBe('')
+    })
+
+    it('should delete forward stop position when pressing Alt + Backspace', () => {
+        passwordInput.text = '한글 abcdㅁㄴㅁ!!!@@'
+        keydownEvent('End')
+        keydownEvent('Backspace', true)
+        expect(passwordInput.text).toBe('')
+    })
 })

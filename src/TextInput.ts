@@ -342,7 +342,7 @@ export class TextInput {
     }
 
     private getDrawText(str: string): string {
-        return this.type === 'password' ? this.settings.passwordChar.repeat(str.length) : str
+        return this.isPassword() ? this.settings.passwordChar.repeat(str.length) : str
     }
 
     private drawUnderline() {
@@ -417,7 +417,6 @@ export class TextInput {
         const shiftKey = keyEvent.shiftKey
         const metaKey = keyEvent.metaKey
         const controlKey = keyEvent.ctrlKey
-        const isPassword = this.type === 'password'
         this.resetAssembleMode()
 
         if (this.isSelected()) {
@@ -428,7 +427,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the right by word
-                        this.extendSelection(this.selection[0], this.getNextStopPosition(false, isPassword))
+                        this.extendSelection(this.selection[0], this.getNextStopPosition(false, this.isPassword()))
                     } else {
                         // Extend selection to the right by one character
                         this.extendSelection(this.selection[0], this.selection[1] + 1)
@@ -447,7 +446,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[1])[1] : this.getLength()
+            const nextCurPos = !this.isPassword() ? this.getStopWordRange(this.selection[1])[1] : this.getLength()
 
             if (shiftKey) {
                 // If shift is pressed, extend the selection to the next word boundary
@@ -486,7 +485,6 @@ export class TextInput {
         const shiftKey = keyEvent.shiftKey
         const metaKey = keyEvent.metaKey
         const controlKey = keyEvent.ctrlKey
-        const isPassword = this.type === 'password'
         this.resetAssembleMode()
 
         if (this.isSelected()) {
@@ -497,7 +495,7 @@ export class TextInput {
                 } else {
                     if (altKey) {
                         // Extend selection to the left by word
-                        this.extendSelection(this.selection[0], this.getNextStopPosition(true, isPassword))
+                        this.extendSelection(this.selection[0], this.getNextStopPosition(true, this.isPassword()))
                     } else {
                         // Extend selection to the left by one character
                         this.extendSelection(this.selection[0], this.selection[1] - 1)
@@ -516,7 +514,7 @@ export class TextInput {
 
         if (altKey) {
             // Handle shift key with alt key for word movement
-            const nextCurPos = !isPassword ? this.getStopWordRange(this.selection[0] - 1)[0] : 0
+            const nextCurPos = !this.isPassword() ? this.getStopWordRange(this.selection[0] - 1)[0] : 0
 
             if (shiftKey) {
                 this.extendSelection(this.selection[1], nextCurPos)
@@ -722,7 +720,7 @@ export class TextInput {
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
-        if (this.type === 'password') {
+        if (this.isPassword()) {
             this.assembleHangul(beforeValue, this.convertKoreanToEnglish(newValue), afterValue)
             return
         }
@@ -772,8 +770,7 @@ export class TextInput {
 
         // If no text is selected, remove the character 'after' the cursor
         const [before, after] = this.getSelectionOutside()
-        const slicePos = altKey ? this.getStopWordRange(this.selection[1])[1] : 1
-        const newAfter = after.slice(slicePos)
+        const newAfter = after.slice(this.getSlicePosition(after, false, altKey, false))
         this.value = before + newAfter
         this.moveSelection(before.length)
     }
@@ -810,10 +807,25 @@ export class TextInput {
 
         // If no text is selected, remove the character 'before' the cursor
         const [before, after] = this.getSelectionOutside()
-        const slicePos = metaKey ? before.length * -1 : altKey ? this.getStopWordRange(this.selection[1] - 1)[0] : -1
-        const newBefore = before.slice(0, slicePos)
+        const newBefore = before.slice(0, this.getSlicePosition(before, true, altKey, metaKey))
         this.value = newBefore + after
         this.moveSelection(newBefore.length)
+    }
+
+    private getSlicePosition(subText: string, isForward: boolean, altKey: boolean, metaKey: boolean): number {
+        if (!isForward) {
+            return altKey ? (this.isPassword() ? subText.length : this.getStopWordRange(this.selection[1])[1]) : 1
+        }
+
+        if (metaKey) {
+            return -subText.length
+        }
+
+        if (altKey) {
+            return this.isPassword() ? -subText.length : this.getStopWordRange(this.selection[1] - 1)[0]
+        }
+
+        return -1
     }
 
     private setAssemblePos(pos: number) {
@@ -870,6 +882,10 @@ export class TextInput {
         const y = event.clientY - rect.top
 
         return { x, y }
+    }
+
+    private isPassword(): boolean {
+        return this.type === 'password'
     }
 
     // DOM Event Handler
@@ -998,7 +1014,7 @@ export class TextInput {
     }
 
     private async onCopy(event: ClipboardEvent) {
-        if (!this.isFocused || this.type === 'password' || this.isEmpty()) return
+        if (!this.isFocused || this.isPassword() || this.isEmpty()) return
         await navigator.clipboard.writeText(this.getSelectionText())
     }
 
@@ -1023,7 +1039,7 @@ export class TextInput {
     }
 
     private async onCut(event: ClipboardEvent) {
-        if (!this.isFocused || this.type === 'password' || this.isEmpty()) return
+        if (!this.isFocused || this.isPassword() || this.isEmpty()) return
         await navigator.clipboard.writeText(this.getSelectionText())
         const [before, after] = this.getSelectionOutside()
         this.value = before + after
