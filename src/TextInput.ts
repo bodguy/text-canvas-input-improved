@@ -1032,14 +1032,14 @@ export class TextInput {
         const startChar = this.at(pos)
         if (!startChar) return [pos, pos]
 
-        if (TextInput.DELIMITERS.has(startChar)) {
+        if (this.isDelimiter(startChar)) {
             // Expand the range for consecutive *same-type* delimiters
             let start = pos
             let end = pos + 1
-            while (start > 0 && TextInput.DELIMITERS.has(this.at(start - 1)) && this.at(start - 1) === startChar) {
+            while (start > 0 && this.isDelimiter(this.at(start - 1)) && this.at(start - 1) === startChar) {
                 start--
             }
-            while (end < this.getLength() && TextInput.DELIMITERS.has(this.at(end)) && this.at(end) === startChar) {
+            while (end < this.getLength() && this.isDelimiter(this.at(end)) && this.at(end) === startChar) {
                 end++
             }
 
@@ -1096,7 +1096,7 @@ export class TextInput {
         // Stop condition for non-delimiter characters
         const char = this.at(i)
         return (
-            TextInput.DELIMITERS.has(char) ||
+            this.isDelimiter(char) ||
             (isNonAsciiStart && (!this.isHangul(char) || this.isNotCompleteHangul(char))) ||
             (!isNonAsciiStart && this.isHangul(char))
         )
@@ -1104,6 +1104,10 @@ export class TextInput {
 
     private isNotCompleteHangul(char: string): boolean {
         return this.isHangul(char) && !Hangul.isComplete(char)
+    }
+
+    private isDelimiter(char: string): boolean {
+        return TextInput.DELIMITERS.has(char)
     }
 
     selectAllText() {
