@@ -413,15 +413,14 @@ export class TextInput {
 
     private onRight(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault()
-        const altKey = keyEvent.altKey
+        const altKey = keyEvent.altKey || keyEvent.ctrlKey
         const shiftKey = keyEvent.shiftKey
         const metaKey = keyEvent.metaKey
-        const controlKey = keyEvent.ctrlKey
         this.resetAssembleMode()
 
         if (this.isSelected()) {
             if (shiftKey) {
-                if (metaKey || controlKey) {
+                if (metaKey) {
                     // Extend selection to the end of the text
                     this.extendRightBoundary()
                 } else {
@@ -434,7 +433,7 @@ export class TextInput {
                     }
                 }
             } else {
-                if (metaKey || controlKey) {
+                if (metaKey) {
                     // Clear the selection and Move cursor to the end of text
                     this.onEndOfSelection()
                 } else {
@@ -459,7 +458,7 @@ export class TextInput {
         }
 
         // meta/control key is pressed
-        if (metaKey || controlKey) {
+        if (metaKey) {
             if (shiftKey) {
                 this.extendSelection(this.selection[0], this.getLength())
             } else {
@@ -481,15 +480,14 @@ export class TextInput {
 
     private onLeft(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault()
-        const altKey = keyEvent.altKey
+        const altKey = keyEvent.altKey || keyEvent.ctrlKey
         const shiftKey = keyEvent.shiftKey
         const metaKey = keyEvent.metaKey
-        const controlKey = keyEvent.ctrlKey
         this.resetAssembleMode()
 
         if (this.isSelected()) {
             if (shiftKey) {
-                if (metaKey || controlKey) {
+                if (metaKey) {
                     // Extend selection to the start of the text
                     this.extendLeftBoundary()
                 } else {
@@ -502,7 +500,7 @@ export class TextInput {
                     }
                 }
             } else {
-                if (metaKey || controlKey) {
+                if (metaKey) {
                     // Clear the selection and Move cursor to the beginning of text
                     this.onStartOfSelection()
                 } else {
@@ -525,8 +523,8 @@ export class TextInput {
             return
         }
 
-        // meta/control key is pressed
-        if (metaKey || controlKey) {
+        // meta key is pressed
+        if (metaKey) {
             if (shiftKey) {
                 this.extendSelection(this.selection[1], 0)
             } else {
@@ -754,7 +752,7 @@ export class TextInput {
     private onRemoveBackward(keyEvent: KeyboardEvent) {
         keyEvent.preventDefault()
 
-        const altKey = keyEvent.altKey
+        const altKey = keyEvent.altKey || keyEvent.ctrlKey
 
         if (this.isSelected()) {
             // If text is selected, remove the selected text
@@ -779,7 +777,7 @@ export class TextInput {
         keyEvent.preventDefault()
 
         const metaKey = keyEvent.metaKey
-        const altKey = keyEvent.altKey
+        const altKey = keyEvent.altKey || keyEvent.ctrlKey
 
         if (this.isSelected()) {
             // If text is selected, remove the selected text
@@ -903,6 +901,7 @@ export class TextInput {
             case 'Tab':
             case 'ArrowUp':
             case 'ArrowDown':
+                keyEvent.preventDefault()
                 break
             case 'Enter':
                 this.settings.enterCallback(keyEvent)
