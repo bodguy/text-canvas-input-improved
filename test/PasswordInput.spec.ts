@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { TextInput } from '@/TextInput'
-import { keydownEvent, doubleClickEvent } from './TestUtil'
+import { keydownEvent } from './TestUtil'
 
 describe('PasswordInput', () => {
     const canvas = document.createElement('canvas')
