@@ -311,4 +311,38 @@ describe('TextInput', () => {
         keydownEvent('ArrowLeft', true, true)
         expect(textInput.getSelection()).toStrictEqual([4, 0])
     })
+
+    it('should delete backward stop position when pressing Alt + Delete', () => {
+        textInput.text = '한글 abcdㅁㄴㅁ!!!@@'
+        keydownEvent('Home')
+        keydownEvent('Delete', true)
+        expect(textInput.text).toBe(' abcdㅁㄴㅁ!!!@@')
+        keydownEvent('Delete', true)
+        expect(textInput.text).toBe('abcdㅁㄴㅁ!!!@@')
+        keydownEvent('Delete', true)
+        expect(textInput.text).toBe('ㅁㄴㅁ!!!@@')
+        keydownEvent('Delete', true)
+        expect(textInput.text).toBe('!!!@@')
+        keydownEvent('Delete', true)
+        expect(textInput.text).toBe('@@')
+        keydownEvent('Delete', true)
+        expect(textInput.text).toBe('')
+    })
+
+    it('should delete forward stop position when pressing Alt + Backspace', () => {
+        textInput.text = '한글 abcdㅁㄴㅁ!!!@@'
+        keydownEvent('End')
+        keydownEvent('Backspace', true)
+        expect(textInput.text).toBe('한글 abcdㅁㄴㅁ!!!')
+        keydownEvent('Backspace', true)
+        expect(textInput.text).toBe('한글 abcdㅁㄴㅁ')
+        keydownEvent('Backspace', true)
+        expect(textInput.text).toBe('한글 abcd')
+        keydownEvent('Backspace', true)
+        expect(textInput.text).toBe('한글 ')
+        keydownEvent('Backspace', true)
+        expect(textInput.text).toBe('한글')
+        keydownEvent('Backspace', true)
+        expect(textInput.text).toBe('')
+    })
 })

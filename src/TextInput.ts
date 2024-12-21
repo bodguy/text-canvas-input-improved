@@ -772,7 +772,8 @@ export class TextInput {
 
         // If no text is selected, remove the character 'after' the cursor
         const [before, after] = this.getSelectionOutside()
-        const newAfter = after.slice(1)
+        const slicePos = altKey ? this.getStopWordRange(this.selection[1])[1] : 1
+        const newAfter = after.slice(slicePos)
         this.value = before + newAfter
         this.moveSelection(before.length)
     }
@@ -809,7 +810,8 @@ export class TextInput {
 
         // If no text is selected, remove the character 'before' the cursor
         const [before, after] = this.getSelectionOutside()
-        const newBefore = before.slice(0, metaKey ? before.length * -1 : -1)
+        const slicePos = metaKey ? before.length * -1 : altKey ? this.getStopWordRange(this.selection[1] - 1)[0] : -1
+        const newBefore = before.slice(0, slicePos)
         this.value = newBefore + after
         this.moveSelection(newBefore.length)
     }
