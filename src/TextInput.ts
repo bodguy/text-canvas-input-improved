@@ -199,7 +199,7 @@ export class TextInput {
     private startPos: number // TODO: 텍스트내 보여줄 시작 위치
     private wasOver: boolean
     private settings: typeof TextInput.defaultSettings
-    private dataTransfer: DataTransfer
+    private dataTransfer: DataTransfer | null
     private hangulMode: boolean
     private undoRedoManager: UndoRedoManager
 
@@ -216,7 +216,7 @@ export class TextInput {
         this.resetAssembleMode()
         this.startPos = 0
         this.wasOver = false
-        this.dataTransfer = new DataTransfer()
+        this.dataTransfer = window.DataTransfer ? new DataTransfer() : null
         this.hangulMode = false
         this.undoRedoManager = new UndoRedoManager()
 
