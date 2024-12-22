@@ -29,7 +29,7 @@ export type TextInputSettings = {
     focusCallback: (inOut: boolean) => void
 }
 
-class UndoRedoManager {
+class UndoManager {
     private maxSize: number
     private undoStack: string[]
     private redoStack: string[]
@@ -223,7 +223,7 @@ export class TextInput {
     private settings: typeof TextInput.defaultSettings
     private dataTransfer: DataTransfer | null
     private hangulMode: boolean
-    private undoRedoManager: UndoRedoManager
+    private undoManager: UndoManager
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -240,7 +240,7 @@ export class TextInput {
         this.wasOver = false
         this.dataTransfer = window.DataTransfer ? new DataTransfer() : null
         this.hangulMode = false
-        this.undoRedoManager = new UndoRedoManager()
+        this.undoManager = new UndoManager()
 
         document.addEventListener('keydown', this.onKeyDown.bind(this))
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true)
@@ -1231,7 +1231,7 @@ export class TextInput {
     }
 
     private handleRedo() {
-        const redoText = this.undoRedoManager.redo()
+        const redoText = this.undoManager.redo()
         if (redoText !== null) {
             this.text = redoText
             this.onEndOfSelection()
@@ -1240,7 +1240,7 @@ export class TextInput {
     }
 
     private handleUndo() {
-        const undoText = this.undoRedoManager.undo()
+        const undoText = this.undoManager.undo()
         if (undoText !== null) {
             this.text = undoText
             this.onEndOfSelection()
