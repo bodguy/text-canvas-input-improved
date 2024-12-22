@@ -625,6 +625,7 @@ export class TextInput {
     private handleMetaInput(keyEvent: KeyboardEvent): boolean {
         const char = keyEvent.key
         const metaKey = keyEvent.metaKey || keyEvent.ctrlKey
+        const shiftKey = keyEvent.shiftKey
 
         // copy selection text
         if (metaKey && (char === 'c' || char === 'C' || char === 'ㅊ')) {
@@ -653,6 +654,20 @@ export class TextInput {
 
         // refresh event
         if (metaKey && (char === 'r' || char === 'R' || char === 'ㄱ')) {
+            return true
+        }
+
+        // redo event
+        if (metaKey && shiftKey && (char === 'z' || char === 'ㅋ')) {
+            keyEvent.preventDefault()
+            this.handleRedo()
+            return true
+        }
+
+        // undo event
+        if (metaKey && (char === 'z' || char === 'ㅋ')) {
+            keyEvent.preventDefault()
+            this.handleUndo()
             return true
         }
 
@@ -1152,6 +1167,14 @@ export class TextInput {
     selectAllText() {
         this.extendSelection(0, this.getLength())
         this.resetAssembleMode()
+    }
+
+    private handleRedo() {
+        console.log('redo')
+    }
+
+    private handleUndo() {
+        console.log('undo')
     }
 
     private getSelectionOutside(): [string, string] {
