@@ -30,17 +30,36 @@ export type TextInputSettings = {
 }
 
 class UndoRedoManager {
+    private static UNDO_REDO_INTERVAL = 0.5 // 500ms interval for grouping actions
     private maxSize: number
     private undoStack: string[]
     private redoStack: string[]
+    private groupInterval: number
 
     constructor(maxSize: number = 50) {
         this.maxSize = maxSize
         this.undoStack = []
         this.redoStack = []
+        this.groupInterval = 0
+    }
+
+    update(deltaTime: number): boolean {
+        this.groupInterval += deltaTime
+        if (this.groupInterval >= UndoRedoManager.UNDO_REDO_INTERVAL) {
+            this.groupInterval = this.groupInterval - UndoRedoManager.UNDO_REDO_INTERVAL
+            return true
+        }
+
+        return false
+    }
+
+    reset() {
+        this.groupInterval = 0
     }
 
     saveState(state: string) {
+        if (this.undoStack[this.undoStack.length - 1] === state) return
+
         this.undoStack.push(state)
         if (this.undoStack.length > this.maxSize) {
             this.undoStack.shift() // remove the oldest one
@@ -185,7 +204,6 @@ export class TextInput {
         hoverCallback: (inOut: boolean) => {},
         focusCallback: (inOut: boolean) => {}
     }
-    private static UNDO_REDO_INTERVAL = 500 // 500ms interval for grouping actions
 
     private canvas: HTMLCanvasElement
     private context: CanvasRenderingContext2D
