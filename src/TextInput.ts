@@ -30,41 +30,30 @@ export type TextInputSettings = {
 }
 
 class UndoRedoManager {
-    private static UNDO_REDO_INTERVAL = 0.5 // 500ms interval for grouping actions
     private maxSize: number
     private undoStack: string[]
     private redoStack: string[]
     private lastSavedState: string | null
-    private groupInterval: number
 
     constructor(maxSize: number = 50) {
         this.maxSize = maxSize
         this.undoStack = []
         this.redoStack = []
         this.lastSavedState = null
-        this.groupInterval = 0
     }
 
-    update(deltaTime: number): void {
-        this.groupInterval += deltaTime
-    }
-
-    reset(): void {
-        this.groupInterval = 0
-    }
-
-    saveState(state: string): void {
+    saveState(state: string, group: boolean): void {
         // Avoid saving the same state consecutively
-        if (this.lastSavedState === state) return
-
-        // Respect grouping interval logic
-        if (this.groupInterval < UndoRedoManager.UNDO_REDO_INTERVAL && this.undoStack.length > 0) {
-            const lastState = this.undoStack[this.undoStack.length - 1]
-            if (lastState === state) return
-        }
+        if (state === '' || this.lastSavedState === state) return
 
         // Save state to the undo stack
-        this.undoStack.push(state)
+        if (group && this.lastSavedState) {
+            const before = this.undoStack.pop() ?? ''
+            this.undoStack.push(before + state)
+        } else {
+            this.undoStack.push(state)
+        }
+        
         if (this.undoStack.length > this.maxSize) {
             this.undoStack.shift() // Remove the oldest state
         }
@@ -72,14 +61,13 @@ class UndoRedoManager {
         // Clear redo stack whenever a new state is saved
         this.redoStack = []
         this.lastSavedState = state
-        this.reset()
     }
 
     undo(): string | null {
         if (this.undoStack.length === 0) return null
 
         const previousState = this.undoStack.pop()
-        if (previousState !== undefined) {
+        if (previousState) {
             this.redoStack.push(previousState)
             return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : ''
         }
@@ -91,19 +79,12 @@ class UndoRedoManager {
         if (this.redoStack.length === 0) return null
 
         const nextState = this.redoStack.pop()
-        if (nextState !== undefined) {
+        if (nextState) {
             this.undoStack.push(nextState)
             return nextState
         }
 
         return null
-    }
-
-    clear(): void {
-        this.undoStack = []
-        this.redoStack = []
-        this.lastSavedState = null
-        this.reset()
     }
 }
 
@@ -1251,7 +1232,7 @@ export class TextInput {
 
     private handleRedo() {
         const redoText = this.undoRedoManager.redo()
-        if (redoText) {
+        if (redoText !== null) {
             this.text = redoText
             this.onEndOfSelection()
             this.resetAssembleMode()
@@ -1260,7 +1241,7 @@ export class TextInput {
 
     private handleUndo() {
         const undoText = this.undoRedoManager.undo()
-        if (undoText) {
+        if (undoText !== null) {
             this.text = undoText
             this.onEndOfSelection()
             this.resetAssembleMode()
