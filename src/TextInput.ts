@@ -34,53 +34,76 @@ class UndoRedoManager {
     private maxSize: number
     private undoStack: string[]
     private redoStack: string[]
+    private lastSavedState: string | null
     private groupInterval: number
 
     constructor(maxSize: number = 50) {
         this.maxSize = maxSize
         this.undoStack = []
         this.redoStack = []
+        this.lastSavedState = null
         this.groupInterval = 0
     }
 
-    update(deltaTime: number): boolean {
+    update(deltaTime: number): void {
         this.groupInterval += deltaTime
-        if (this.groupInterval >= UndoRedoManager.UNDO_REDO_INTERVAL) {
-            this.groupInterval = this.groupInterval - UndoRedoManager.UNDO_REDO_INTERVAL
-            return true
+    }
+
+    reset(): void {
+        this.groupInterval = 0
+    }
+
+    saveState(state: string): void {
+        // Avoid saving the same state consecutively
+        if (this.lastSavedState === state) return
+
+        // Respect grouping interval logic
+        if (this.groupInterval < UndoRedoManager.UNDO_REDO_INTERVAL && this.undoStack.length > 0) {
+            const lastState = this.undoStack[this.undoStack.length - 1]
+            if (lastState === state) return
         }
 
-        return false
-    }
-
-    reset() {
-        this.groupInterval = 0
-    }
-
-    saveState(state: string) {
-        if (this.undoStack[this.undoStack.length - 1] === state) return
-
+        // Save state to the undo stack
         this.undoStack.push(state)
         if (this.undoStack.length > this.maxSize) {
-            this.undoStack.shift() // remove the oldest one
+            this.undoStack.shift() // Remove the oldest state
         }
-        this.redoStack = [] // Clear redo stack whenever a new state is added
+
+        // Clear redo stack whenever a new state is saved
+        this.redoStack = []
+        this.lastSavedState = state
+        this.reset()
     }
 
-    undo(): string {
+    undo(): string | null {
         if (this.undoStack.length === 0) return null
 
         const previousState = this.undoStack.pop()
-        this.redoStack.push(previousState) // Save the current state to redo stack
-        return previousState
+        if (previousState !== undefined) {
+            this.redoStack.push(previousState)
+            return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : ''
+        }
+
+        return null
     }
 
-    redo(): string {
+    redo(): string | null {
         if (this.redoStack.length === 0) return null
 
         const nextState = this.redoStack.pop()
-        this.undoStack.push(nextState) // Save the current state to undo stack
-        return nextState
+        if (nextState !== undefined) {
+            this.undoStack.push(nextState)
+            return nextState
+        }
+
+        return null
+    }
+
+    clear(): void {
+        this.undoStack = []
+        this.redoStack = []
+        this.lastSavedState = null
+        this.reset()
     }
 }
 
