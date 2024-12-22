@@ -163,6 +163,7 @@ export class TextInput {
     private wasOver: boolean
     private settings: typeof TextInput.defaultSettings
     private dataTransfer: DataTransfer
+    private hangulMode: boolean
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -178,6 +179,7 @@ export class TextInput {
         this.startPos = 0
         this.wasOver = false
         this.dataTransfer = new DataTransfer()
+        this.hangulMode = false
 
         document.addEventListener('keydown', this.onKeyDown.bind(this))
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true)
@@ -706,14 +708,16 @@ export class TextInput {
             return
         }
 
+        const newValue = this.hangulMode ? this.convertEnglishToKorean(value) : value
+
         const [before, after] = this.getSelectionOutside()
 
-        if (this.isHangul(value)) {
+        if (this.isHangul(newValue)) {
             // Handle Hangul input
-            this.handleHangul(before, value, after)
+            this.handleHangul(before, newValue, after)
         } else {
             // Handle non-Hangul input
-            this.handleNonHangul(before, value, after)
+            this.handleNonHangul(before, newValue, after)
         }
 
         // const totalWidth = this.measureText(this.value);
@@ -932,6 +936,9 @@ export class TextInput {
             case 'End':
                 this.onEnd(keyEvent)
                 break
+            case 'HangulMode':
+                this.hangulMode = !this.hangulMode
+                break    
             case ' ':
                 keyEvent.preventDefault()
             // Intentionally no break statement
@@ -1222,5 +1229,9 @@ export class TextInput {
 
     private convertKoreanToEnglish(value: string): string {
         return TextInput.KOREAN_TO_ENGLISH[value] ?? value
+    }
+
+    private convertEnglishToKorean(value: string): string {
+        return TextInput.ENGLISH_TO_KOREAN[value] ?? value
     }
 }
