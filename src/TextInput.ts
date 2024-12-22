@@ -99,6 +99,9 @@ export class TextInput {
         o: 'ㅒ',
         p: 'ㅖ'
     }
+    private static ENGLISH_TO_KOREAN: Record<string, string> = Object.fromEntries(
+        Object.entries(TextInput.KOREAN_TO_ENGLISH).map(([key, value]) => [value, key])
+    )
     private static defaultSettings: TextInputSettings = {
         font: 'Apple SD Gothic Neo',
         fontColor: '#000',
