@@ -29,6 +29,42 @@ export type TextInputSettings = {
     focusCallback: (inOut: boolean) => void
 }
 
+class UndoRedoManager {
+    private maxSize: number
+    private undoStack: string[]
+    private redoStack: string[]
+
+    constructor(maxSize: number = 50) {
+        this.maxSize = maxSize
+        this.undoStack = []
+        this.redoStack = []
+    }
+
+    saveState(state: string) {
+        this.undoStack.push(state)
+        if (this.undoStack.length > this.maxSize) {
+            this.undoStack.shift() // remove the oldest one
+        }
+        this.redoStack = [] // Clear redo stack whenever a new state is added
+    }
+
+    undo(): string {
+        if (this.undoStack.length === 0) return null
+
+        const previousState = this.undoStack.pop()
+        this.redoStack.push(previousState) // Save the current state to redo stack
+        return previousState
+    }
+
+    redo(): string {
+        if (this.redoStack.length === 0) return null
+
+        const nextState = this.redoStack.pop()
+        this.undoStack.push(nextState) // Save the current state to undo stack
+        return nextState
+    }
+}
+
 export class TextInput {
     private static DELIMITERS = new Set([
         ' ',
@@ -149,6 +185,7 @@ export class TextInput {
         hoverCallback: (inOut: boolean) => {},
         focusCallback: (inOut: boolean) => {}
     }
+    private static UNDO_REDO_INTERVAL = 500 // 500ms interval for grouping actions
 
     private canvas: HTMLCanvasElement
     private context: CanvasRenderingContext2D
@@ -164,6 +201,7 @@ export class TextInput {
     private settings: typeof TextInput.defaultSettings
     private dataTransfer: DataTransfer
     private hangulMode: boolean
+    private undoRedoManager: UndoRedoManager
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -180,6 +218,7 @@ export class TextInput {
         this.wasOver = false
         this.dataTransfer = new DataTransfer()
         this.hangulMode = false
+        this.undoRedoManager = new UndoRedoManager()
 
         document.addEventListener('keydown', this.onKeyDown.bind(this))
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true)
@@ -953,7 +992,7 @@ export class TextInput {
                 break
             case 'HangulMode':
                 this.hangulMode = !this.hangulMode
-                break    
+                break
             case ' ':
                 keyEvent.preventDefault()
             // Intentionally no break statement
@@ -1170,11 +1209,21 @@ export class TextInput {
     }
 
     private handleRedo() {
-        console.log('redo')
+        const redoText = this.undoRedoManager.redo()
+        if (redoText) {
+            this.text = redoText
+            this.onEndOfSelection()
+            this.resetAssembleMode()
+        }
     }
 
     private handleUndo() {
-        console.log('undo')
+        const undoText = this.undoRedoManager.undo()
+        if (undoText) {
+            this.text = undoText
+            this.onEndOfSelection()
+            this.resetAssembleMode()
+        }
     }
 
     private getSelectionOutside(): [string, string] {

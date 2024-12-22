@@ -23,6 +23,7 @@ npm deploy
 - text clip & viewport (텍스트내 보여줄 시작 위치)
 - 최대글자 한글조합중일때 버그
 - stop word space inclusion
+- undo/redo
 
 ## DONE
 
