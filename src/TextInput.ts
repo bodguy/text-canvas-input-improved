@@ -245,14 +245,9 @@ export class TextInput {
         this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this), true)
         document.addEventListener('mouseup', this.onMouseUp.bind(this), true)
         this.canvas.addEventListener('dblclick', this.onDoubleClick.bind(this), true)
-        this.canvas.addEventListener('copy', async (e) => this.onCopy.call(this, e))
-        this.canvas.addEventListener('paste', async (e) => this.onPaste.call(this, e))
-        this.canvas.addEventListener('cut', async (e) => this.onCut.call(this, e))
-
-        // https://www.w3.org/TR/uievents-code/
-        // https://w3c.github.io/uievents/#code-examples
-        // navigator.keyboard.getLayoutMap()
-        //     .then(k => console.log(k.get('KeyQ') + k.get('KeyW') + k.get('KeyE') + k.get('KeyR') + k.get('KeyT') + k.get('KeyY')))
+        document.addEventListener('copy', (e) => this.onCopy.call(this, e))
+        document.addEventListener('paste', (e) => this.onPaste.call(this, e))
+        document.addEventListener('cut', (e) => this.onCut.call(this, e))
     }
 
     draw() {
@@ -682,10 +677,6 @@ export class TextInput {
         this.moveSelection(this.selection[1])
     }
 
-    private createClipboardEvent(type: 'copy' | 'paste' | 'cut'): ClipboardEvent {
-        return new ClipboardEvent(type, { bubbles: true, cancelable: true, clipboardData: window.clipboardData })
-    }
-
     private handleMetaInput(keyEvent: KeyboardEvent): boolean {
         const char = keyEvent.key
         const metaKey = keyEvent.metaKey || keyEvent.ctrlKey
@@ -693,19 +684,16 @@ export class TextInput {
 
         // copy selection text
         if (metaKey && (char === 'c' || char === 'C' || char === 'ㅊ')) {
-            this.canvas.dispatchEvent(this.createClipboardEvent('copy'))
             return true
         }
 
         // paste text
         if (metaKey && (char === 'v' || char === 'V' || char === 'ㅍ')) {
-            this.canvas.dispatchEvent(this.createClipboardEvent('paste'))
             return true
         }
 
         // cut text
         if (metaKey && (char === 'x' || char === 'X' || char === 'ㅌ')) {
-            this.canvas.dispatchEvent(this.createClipboardEvent('cut'))
             return true
         }
 
@@ -1103,21 +1091,25 @@ export class TextInput {
         }
     }
 
-    private async onCopy(event: ClipboardEvent) {
+    private onCopy(event: ClipboardEvent) {
         if (!this.isFocused || this.isPassword() || this.isEmpty()) return
-        const writeText = async (text: string) =>
-            navigator.clipboard
-                ? await navigator.clipboard.writeText(text)
-                : event.clipboardData.setData('text/plain', text)
-        writeText(this.getSelectionText())
+        event.clipboardData.setData('text/plain', this.getSelectionText())
+        event.preventDefault()
     }
 
-    private async onPaste(event: ClipboardEvent) {
+    private onPaste(event: ClipboardEvent) {
         if (!this.isFocused) return
-        const text = navigator.clipboard
-            ? await navigator.clipboard.readText()
-            : event.clipboardData.getData('text/plain')
-        this.onSetText(text)
+        this.onSetText(event.clipboardData.getData('text/plain'))
+        event.preventDefault()
+    }
+
+    private onCut(event: ClipboardEvent) {
+        if (!this.isFocused || this.isPassword() || this.isEmpty()) return
+        event.clipboardData.setData('text/plain', this.getSelectionText())
+        event.preventDefault()
+        const [before, after] = this.getSelectionOutside()
+        this.value = before + after
+        this.moveSelection(before.length)
     }
 
     private onSetText(text: string) {
@@ -1132,18 +1124,6 @@ export class TextInput {
 
         const [before, after] = this.getSelectionOutside()
         this.handleNonHangul(before, text, after)
-    }
-
-    private async onCut(event: ClipboardEvent) {
-        if (!this.isFocused || this.isPassword() || this.isEmpty()) return
-        const writeText = async (text: string) =>
-            navigator.clipboard
-                ? await navigator.clipboard.writeText(text)
-                : event.clipboardData.setData('text/plain', text)
-        writeText(this.getSelectionText())
-        const [before, after] = this.getSelectionOutside()
-        this.value = before + after
-        this.moveSelection(before.length)
     }
 
     private getStopWordRange(pos: number): [number, number] {
