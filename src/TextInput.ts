@@ -221,7 +221,6 @@ export class TextInput {
     private startPos: number // TODO: 텍스트내 보여줄 시작 위치
     private wasOver: boolean
     private settings: typeof TextInput.defaultSettings
-    private dataTransfer: DataTransfer | null
     private hangulMode: boolean
     private undoManager: UndoManager
 
@@ -238,7 +237,6 @@ export class TextInput {
         this.resetAssembleMode()
         this.startPos = 0
         this.wasOver = false
-        this.dataTransfer = window.DataTransfer ? new DataTransfer() : null
         this.hangulMode = false
         this.undoManager = new UndoManager()
 
@@ -680,7 +678,7 @@ export class TextInput {
     }
 
     private createClipboardEvent(type: 'copy' | 'paste' | 'cut'): ClipboardEvent {
-        return new ClipboardEvent(type, { bubbles: true, cancelable: true, clipboardData: this.dataTransfer })
+        return new ClipboardEvent(type, { bubbles: true, cancelable: true, clipboardData: window.clipboardData })
     }
 
     private handleMetaInput(keyEvent: KeyboardEvent): boolean {
