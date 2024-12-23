@@ -1188,7 +1188,7 @@ export class TextInput {
             const right = pos + i
 
             // Check the left side
-            if (left >= 0 && start === 0 && this.getWordStopCondition(left, isNonAsciiStart)) {
+            if (left >= 0 && start === 0 && this.isStopWord(left, isNonAsciiStart)) {
                 start = left + 1 // Start is after the delimiter
             }
 
@@ -1196,7 +1196,7 @@ export class TextInput {
             if (
                 right < this.getLength() &&
                 end === this.getLength() &&
-                this.getWordStopCondition(right, isNonAsciiStart)
+                this.isStopWord(right, isNonAsciiStart)
             ) {
                 end = right
             }
@@ -1210,7 +1210,7 @@ export class TextInput {
         return [start, end]
     }
 
-    private getWordStopCondition(i: number, isNonAsciiStart: boolean): boolean {
+    private isStopWord(i: number, isNonAsciiStart: boolean): boolean {
         // Stop condition for non-delimiter characters
         const char = this.at(i)
         return (
