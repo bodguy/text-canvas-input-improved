@@ -248,6 +248,11 @@ export class TextInput {
         this.canvas.addEventListener('copy', async (e) => this.onCopy.call(this, e))
         this.canvas.addEventListener('paste', async (e) => this.onPaste.call(this, e))
         this.canvas.addEventListener('cut', async (e) => this.onCut.call(this, e))
+
+        // https://www.w3.org/TR/uievents-code/
+        // https://w3c.github.io/uievents/#code-examples
+        // navigator.keyboard.getLayoutMap()
+        //     .then(k => console.log(k.get('KeyQ') + k.get('KeyW') + k.get('KeyE') + k.get('KeyR') + k.get('KeyT') + k.get('KeyY')))
     }
 
     draw() {
