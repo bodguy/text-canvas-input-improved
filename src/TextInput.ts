@@ -218,7 +218,6 @@ export class TextInput {
     private blinkTimer: number // 커서 깜빡임 타이머
     private maxLength: number // 최대 글자 (-1인 경우 무한)
     private assemblePos: number
-    private startPos: number // TODO: 텍스트내 보여줄 시작 위치
     private wasOver: boolean
     private settings: typeof TextInput.defaultSettings
     private hangulMode: boolean
@@ -235,7 +234,6 @@ export class TextInput {
         this.maxLength = this.settings.maxLength
         this.resetSelectionPos()
         this.resetAssembleMode()
-        this.startPos = 0
         this.wasOver = false
         this.hangulMode = false
         this.undoManager = new UndoManager()
@@ -786,11 +784,6 @@ export class TextInput {
             // Handle non-Hangul input
             this.handleNonHangul(before, newValue, after)
         }
-
-        // const totalWidth = this.measureText(this.value);
-        // if (totalWidth > this.settings.bounds.x) {
-        //     console.log('overflow!');
-        // }
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
