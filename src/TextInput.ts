@@ -53,7 +53,7 @@ class UndoManager {
         } else {
             this.undoStack.push(state)
         }
-        
+
         if (this.undoStack.length > this.maxSize) {
             this.undoStack.shift() // Remove the oldest state
         }
@@ -1185,11 +1185,7 @@ export class TextInput {
             }
 
             // Check the right side
-            if (
-                right < this.getLength() &&
-                end === this.getLength() &&
-                this.isStopWord(right, isNonAsciiStart)
-            ) {
+            if (right < this.getLength() && end === this.getLength() && this.isStopWord(right, isNonAsciiStart)) {
                 end = right
             }
 
