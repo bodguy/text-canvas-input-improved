@@ -31,15 +31,17 @@ export type TextInputSettings = {
 
 class UndoManager {
     private levelsOfUndo: number
-    private groupsByEvent: boolean
-    private grouping: boolean
-    private undoStack: string[]
-    private redoStack: string[]
+    private groupsByEvent: boolean // Determines if events are grouped by default
+    private grouping: boolean // Indicates if grouping is currently active
+    private currentGroup: string[] // Holds states temporarily during grouping
+    private undoStack: (string | string[])[]
+    private redoStack: (string | string[])[]
 
     constructor(levelsOfUndo: number = 50) {
         this.levelsOfUndo = levelsOfUndo
         this.groupsByEvent = true
         this.grouping = false
+        this.currentGroup = []
         this.undoStack = []
         this.redoStack = []
     }
@@ -48,40 +50,62 @@ class UndoManager {
         // Avoid saving the same state consecutively
         if (state === '' || this.getLastUndo() === state) return
 
-        // Save state to the undo stack
-        if (this.getLastUndo()) {
-            const before = this.undoStack.pop() ?? ''
-            this.undoStack.push(before + state)
+        if (this.grouping) {
+            // If grouping is active, add the state to the current group
+            this.currentGroup.push(state)
         } else {
-            this.undoStack.push(state)
-        }
-        
-        if (this.undoStack.length > this.levelsOfUndo) {
-            this.undoStack.shift() // Remove the oldest state
+            // Add individual state to the undo stack
+            this.pushToUndoStack(state)
         }
 
         // Clear redo stack whenever a new state is saved
         this.redoStack = []
     }
 
+    private pushToUndoStack(state: string | string[]): void {
+        if (this.groupsByEvent && Array.isArray(state) && state.length === 1) {
+            state = state[0]; // Simplify groups of size 1
+        }
+
+        this.undoStack.push(state)
+
+        if (this.undoStack.length > this.levelsOfUndo) {
+            this.undoStack.shift() // Remove the oldest state/group
+        }
+    }
+
     private getLastUndo(): string | null {
-        return this.undoStack[this.undoStack.length - 1]
+        const previous = this.undoStack[this.undoStack.length - 1]
+        if (Array.isArray(previous)) {
+            return previous[previous.length - 1]
+        }
+        return previous ?? null
     }
 
     get canUndo(): boolean {
-        return this.undoStack.length !== 0
+        return this.undoStack.length > 0
     }
 
     get canRedo(): boolean {
-        return this.redoStack.length !== 0
+        return this.redoStack.length > 0
+    }
+
+    isGrouping(): boolean {
+        return this.currentGroup.length > 0
     }
 
     beginUndoGrouping() {
         this.grouping = true
+        this.currentGroup = []
     }
 
     endUndoGrouping() {
+        if (!this.grouping) return
         this.grouping = false
+        if (this.isGrouping()) {
+            this.pushToUndoStack([...this.currentGroup])
+            this.currentGroup = []
+        }
     }
 
     undo(): string | null {
@@ -90,7 +114,10 @@ class UndoManager {
         const previous = this.undoStack.pop()
         if (previous) {
             this.redoStack.push(previous)
-            return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : ''
+            if (Array.isArray(previous)) {
+                return previous[previous.length - 1]
+            }
+            return previous
         }
 
         return null
@@ -102,6 +129,10 @@ class UndoManager {
         const next = this.redoStack.pop()
         if (next) {
             this.undoStack.push(next)
+
+            if (Array.isArray(next)) {
+                return next[next.length - 1]
+            }
             return next
         }
 
@@ -1228,18 +1259,18 @@ export class TextInput {
     }
 
     private handleRedo() {
-        const redoText = this.undoManager.redo()
-        if (redoText !== null) {
-            this.text = redoText
+        const redo = this.undoManager.redo()
+        if (redo !== null) {
+            this.text = redo
             this.onEndOfSelection()
             this.resetAssembleMode()
         }
     }
 
     private handleUndo() {
-        const undoText = this.undoManager.undo()
-        if (undoText !== null) {
-            this.text = undoText
+        const undo = this.undoManager.undo()
+        if (undo !== null) {
+            this.text = undo
             this.onEndOfSelection()
             this.resetAssembleMode()
         }
