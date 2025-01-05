@@ -30,45 +30,66 @@ export type TextInputSettings = {
 }
 
 class UndoManager {
-    private maxSize: number
+    private levelsOfUndo: number
+    private groupsByEvent: boolean
+    private grouping: boolean
     private undoStack: string[]
     private redoStack: string[]
-    private lastSavedState: string | null
 
-    constructor(maxSize: number = 50) {
-        this.maxSize = maxSize
+    constructor(levelsOfUndo: number = 50) {
+        this.levelsOfUndo = levelsOfUndo
+        this.groupsByEvent = true
+        this.grouping = false
         this.undoStack = []
         this.redoStack = []
-        this.lastSavedState = null
     }
 
-    saveState(state: string, group: boolean): void {
+    registerUndo(state: string): void {
         // Avoid saving the same state consecutively
-        if (state === '' || this.lastSavedState === state) return
+        if (state === '' || this.getLastUndo() === state) return
 
         // Save state to the undo stack
-        if (group && this.lastSavedState) {
+        if (this.getLastUndo()) {
             const before = this.undoStack.pop() ?? ''
             this.undoStack.push(before + state)
         } else {
             this.undoStack.push(state)
         }
         
-        if (this.undoStack.length > this.maxSize) {
+        if (this.undoStack.length > this.levelsOfUndo) {
             this.undoStack.shift() // Remove the oldest state
         }
 
         // Clear redo stack whenever a new state is saved
         this.redoStack = []
-        this.lastSavedState = state
+    }
+
+    private getLastUndo(): string | null {
+        return this.undoStack[this.undoStack.length - 1]
+    }
+
+    get canUndo(): boolean {
+        return this.undoStack.length !== 0
+    }
+
+    get canRedo(): boolean {
+        return this.redoStack.length !== 0
+    }
+
+    beginUndoGrouping() {
+        this.grouping = true
+    }
+
+    endUndoGrouping() {
+        this.grouping = false
     }
 
     undo(): string | null {
-        if (this.undoStack.length === 0) return null
+        if (!this.canUndo) return null
 
-        const previousState = this.undoStack.pop()
-        if (previousState) {
-            this.redoStack.push(previousState)
+        const previous = this.undoStack.pop()
+        if (previous) {
+            this.redoStack.push(previous)
             return this.undoStack.length > 0 ? this.undoStack[this.undoStack.length - 1] : ''
         }
 
@@ -76,12 +97,12 @@ class UndoManager {
     }
 
     redo(): string | null {
-        if (this.redoStack.length === 0) return null
+        if (!this.canRedo) return null
 
-        const nextState = this.redoStack.pop()
-        if (nextState) {
-            this.undoStack.push(nextState)
-            return nextState
+        const next = this.redoStack.pop()
+        if (next) {
+            this.undoStack.push(next)
+            return next
         }
 
         return null
