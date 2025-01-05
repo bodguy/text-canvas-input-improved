@@ -1251,8 +1251,7 @@ export class TextInput {
             return
         }
 
-        const redo = this.undoManager.redo() ?? ''
-        this.text = redo
+        this.text = this.undoManager.redo() ?? ''
         this.onEndOfSelection()
         this.resetAssembleMode()
         this.undoManager.endUndoGrouping()
@@ -1266,8 +1265,7 @@ export class TextInput {
             return
         }
 
-        const undo = this.undoManager.undo() ?? ''
-        this.text = undo
+        this.text = this.undoManager.undo() ?? ''
         this.onEndOfSelection()
         this.resetAssembleMode()
         this.undoManager.endUndoGrouping()
