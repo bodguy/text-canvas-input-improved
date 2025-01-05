@@ -97,8 +97,6 @@ class UndoManager {
     }
 
     undo(): string | null {
-        if (!this.canUndo) return null
-
         const previous = this.undoStack.pop()
         if (previous) {
             this.redoStack.push(previous)
@@ -109,8 +107,6 @@ class UndoManager {
     }
 
     redo(): string | null {
-        if (!this.canRedo) return null
-
         const next = this.redoStack.pop()
         if (next) {
             this.undoStack.push(next)
