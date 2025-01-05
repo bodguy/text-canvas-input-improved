@@ -31,15 +31,13 @@ export type TextInputSettings = {
 
 class UndoManager {
     private levelsOfUndo: number
-    private groupsByEvent: boolean // Determines if events are grouped by default
     private grouping: boolean // Indicates if grouping is currently active
-    private currentGroup: string[] // Holds states temporarily during grouping
-    private undoStack: (string | string[])[]
-    private redoStack: (string | string[])[]
+    currentGroup: string[] // Holds states temporarily during grouping
+    undoStack: (string | string[])[]
+    redoStack: (string | string[])[]
 
-    constructor(levelsOfUndo: number = 50) {
+    constructor(levelsOfUndo: number = 10) {
         this.levelsOfUndo = levelsOfUndo
-        this.groupsByEvent = true
         this.grouping = false
         this.currentGroup = []
         this.undoStack = []
@@ -57,17 +55,10 @@ class UndoManager {
             // Add individual state to the undo stack
             this.pushToUndoStack(state)
         }
-
-        // Clear redo stack whenever a new state is saved
-        this.redoStack = []
     }
 
     private pushToUndoStack(state: string | string[]): void {
-        if (this.groupsByEvent && Array.isArray(state) && state.length === 1) {
-            state = state[0]; // Simplify groups of size 1
-        }
-
-        this.undoStack.push(state)
+        this.undoStack.push(Array.isArray(state) ? state.join('') : state)
 
         if (this.undoStack.length > this.levelsOfUndo) {
             this.undoStack.shift() // Remove the oldest state/group
@@ -95,6 +86,7 @@ class UndoManager {
     }
 
     beginUndoGrouping() {
+        if (this.grouping) return
         this.grouping = true
         this.currentGroup = []
     }
@@ -411,11 +403,13 @@ export class TextInput {
         if (value && !this.disabled) {
             this.isFocused = true
             this.blinkTimer = this.settings.caretBlinkRate
+            this.undoManager.beginUndoGrouping()
             this.settings.focusCallback(true)
         } else {
             this.onStartOfSelection()
             this.resetAssembleMode()
             this.resetSelectionPos()
+            this.undoManager.endUndoGrouping()
             this.isFocused = false
             this.settings.focusCallback(false)
         }
@@ -836,6 +830,10 @@ export class TextInput {
             // Handle non-Hangul input
             this.handleNonHangul(before, newValue, after)
         }
+
+        this.undoManager.beginUndoGrouping()
+        this.undoManager.registerUndo(newValue)
+        console.log(this.undoManager.undoStack, this.undoManager.redoStack, this.undoManager.currentGroup)
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -1259,21 +1257,23 @@ export class TextInput {
     }
 
     private handleRedo() {
-        const redo = this.undoManager.redo()
-        if (redo !== null) {
-            this.text = redo
-            this.onEndOfSelection()
-            this.resetAssembleMode()
-        }
+        const redo = this.undoManager.redo() ?? ''
+        this.text = redo
+        this.onEndOfSelection()
+        this.resetAssembleMode()
+        this.undoManager.endUndoGrouping()
+
+        console.log(this.undoManager.undoStack, this.undoManager.redoStack, this.undoManager.currentGroup)
     }
 
     private handleUndo() {
-        const undo = this.undoManager.undo()
-        if (undo !== null) {
-            this.text = undo
-            this.onEndOfSelection()
-            this.resetAssembleMode()
-        }
+        const undo = this.undoManager.undo() ?? ''
+        this.text = undo
+        this.onEndOfSelection()
+        this.resetAssembleMode()
+        this.undoManager.endUndoGrouping()
+
+        console.log(this.undoManager.undoStack, this.undoManager.redoStack, this.undoManager.currentGroup)
     }
 
     private getSelectionOutside(): [string, string] {
