@@ -33,48 +33,38 @@ class UndoManager {
     private levelsOfUndo: number
     private grouping: boolean // Indicates if grouping is currently active
     currentGroup: string // Holds states temporarily during grouping
-    undoStack: string[]
-    redoStack: string[]
+    history: string[]
+    currentIndex: number
 
     constructor(levelsOfUndo: number = 10) {
         this.levelsOfUndo = levelsOfUndo
         this.grouping = false
         this.currentGroup = ''
-        this.undoStack = []
-        this.redoStack = []
+        this.history = []
+        this.currentIndex = -1
     }
 
-    registerUndo(state: string): void {
+    registerUndo(value: string): void {
         // Avoid saving the same state consecutively
-        if (state === '' || this.getLastUndo() === state) return
+        if (value === '' || this.getLastHistory() === value) return
 
         if (this.grouping) {
             // If grouping is active, add the state to the current group
-            this.currentGroup = state
+            this.currentGroup = value
         } else {
             // Add individual state to the undo stack
-            this.pushToUndoStack(state)
+            this.pushToHistory(value)
         }
     }
 
-    private pushToUndoStack(state: string): void {
-        this.undoStack.push(state)
-
-        if (this.undoStack.length > this.levelsOfUndo) {
-            this.undoStack.shift() // Remove the oldest state/group
-        }
+    private pushToHistory(value: string): void {
+        this.history.splice(this.currentIndex + 1)
+        this.history.push(value)
+        this.currentIndex++
     }
 
-    private getLastUndo(): string | null {
-        return this.undoStack[this.undoStack.length - 1] ?? null
-    }
-
-    get canUndo(): boolean {
-        return this.undoStack.length > 0
-    }
-
-    get canRedo(): boolean {
-        return this.redoStack.length > 0
+    private getLastHistory(): string | null {
+        return this.history[this.currentIndex]
     }
 
     isGrouping(): boolean {
@@ -91,28 +81,24 @@ class UndoManager {
         if (!this.grouping) return
         this.grouping = false
         if (this.isGrouping()) {
-            this.pushToUndoStack(this.currentGroup)
+            this.pushToHistory(this.currentGroup)
             this.currentGroup = ''
         }
     }
 
     undo(): string | null {
-        const previous = this.undoStack.pop()
-        if (previous) {
-            this.redoStack.push(previous)
-            return previous
+        if (this.currentIndex > 0) {
+            this.currentIndex--
+            return this.getLastHistory()
         }
-
         return null
     }
 
     redo(): string | null {
-        const next = this.redoStack.pop()
-        if (next) {
-            this.undoStack.push(next)
-            return next
+        if (this.currentIndex < this.history.length - 1) {
+            this.currentIndex++
+            return this.getLastHistory() 
         }
-
         return null
     }
 }
@@ -818,7 +804,7 @@ export class TextInput {
 
         this.undoManager.beginUndoGrouping()
         this.undoManager.registerUndo(this.value)
-        console.log(this.undoManager.undoStack, this.undoManager.redoStack, this.undoManager.currentGroup)
+        console.log("appendValue", this.undoManager.history, this.undoManager.currentIndex, this.undoManager.currentGroup)
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -1252,7 +1238,7 @@ export class TextInput {
         this.resetAssembleMode()
         this.undoManager.endUndoGrouping()
 
-        console.log(this.undoManager.undoStack, this.undoManager.redoStack, this.undoManager.currentGroup)
+        console.log("redo", this.undoManager.history, this.undoManager.currentIndex, this.undoManager.currentGroup)
     }
 
     private handleUndo() {
@@ -1266,7 +1252,7 @@ export class TextInput {
         this.resetAssembleMode()
         this.undoManager.endUndoGrouping()
 
-        console.log(this.undoManager.undoStack, this.undoManager.redoStack, this.undoManager.currentGroup)
+        console.log("undo", this.undoManager.history, this.undoManager.currentIndex, this.undoManager.currentGroup)
     }
 
     private getSelectionOutside(): [string, string] {
