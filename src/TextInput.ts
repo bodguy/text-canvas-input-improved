@@ -97,7 +97,7 @@ class UndoManager {
     redo(): string | null {
         if (this.currentIndex < this.history.length - 1) {
             this.currentIndex++
-            return this.getLastHistory() 
+            return this.getLastHistory()
         }
         return null
     }
@@ -804,7 +804,6 @@ export class TextInput {
 
         this.undoManager.beginUndoGrouping()
         this.undoManager.registerUndo(this.value)
-        console.log("appendValue", this.undoManager.history, this.undoManager.currentIndex, this.undoManager.currentGroup)
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -1187,11 +1186,7 @@ export class TextInput {
             }
 
             // Check the right side
-            if (
-                right < this.getLength() &&
-                end === this.getLength() &&
-                this.isStopWord(right, isNonAsciiStart)
-            ) {
+            if (right < this.getLength() && end === this.getLength() && this.isStopWord(right, isNonAsciiStart)) {
                 end = right
             }
 
@@ -1237,8 +1232,6 @@ export class TextInput {
         this.onEndOfSelection()
         this.resetAssembleMode()
         this.undoManager.endUndoGrouping()
-
-        console.log("redo", this.undoManager.history, this.undoManager.currentIndex, this.undoManager.currentGroup)
     }
 
     private handleUndo() {
@@ -1251,8 +1244,6 @@ export class TextInput {
         this.onEndOfSelection()
         this.resetAssembleMode()
         this.undoManager.endUndoGrouping()
-
-        console.log("undo", this.undoManager.history, this.undoManager.currentIndex, this.undoManager.currentGroup)
     }
 
     private getSelectionOutside(): [string, string] {
