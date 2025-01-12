@@ -1,6 +1,3 @@
-/**
- * UndoAction
- */
 class UndoAction {
     target: any
     func: (...args: any[]) => void
@@ -24,9 +21,6 @@ class UndoAction {
     }
 }
 
-/**
- * ActionGroup
- */
 class ActionGroup {
     actions: (UndoAction | ActionGroup)[] = []
     mode: string
@@ -85,9 +79,6 @@ class ActionGroup {
     }
 }
 
-/**
- * UndoManager
- */
 class UndoManager {
     static COALESCE_MODE = {
         NONE: 'none',
