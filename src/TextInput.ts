@@ -1,4 +1,5 @@
 import * as Hangul from 'hangul-js'
+import { UndoManager } from '@/UndoManager'
 
 export type TextInputSettings = {
     font: string
@@ -27,80 +28,6 @@ export type TextInputSettings = {
     enterCallback: (event: KeyboardEvent) => void
     hoverCallback: (inOut: boolean) => void
     focusCallback: (inOut: boolean) => void
-}
-
-class UndoManager {
-    private levelsOfUndo: number
-    private grouping: boolean // Indicates if grouping is currently active
-    currentGroup: string // Holds states temporarily during grouping
-    history: string[]
-    currentIndex: number
-
-    constructor(levelsOfUndo: number = 10) {
-        this.levelsOfUndo = levelsOfUndo
-        this.grouping = false
-        this.currentGroup = ''
-        this.history = []
-        this.currentIndex = -1
-    }
-
-    registerUndo(value: string): void {
-        // Avoid saving the same state consecutively
-        if (value === '' || this.getLastHistory() === value) return
-
-        if (this.grouping) {
-            // If grouping is active, add the state to the current group
-            this.currentGroup = value
-        } else {
-            // Add individual state to the undo stack
-            this.pushToHistory(value)
-        }
-    }
-
-    private pushToHistory(value: string): void {
-        this.history.splice(this.currentIndex + 1)
-        this.history.push(value)
-        this.currentIndex++
-    }
-
-    private getLastHistory(): string | null {
-        return this.history[this.currentIndex]
-    }
-
-    isGrouping(): boolean {
-        return this.currentGroup !== ''
-    }
-
-    beginUndoGrouping() {
-        if (this.grouping) return
-        this.grouping = true
-        this.currentGroup = ''
-    }
-
-    endUndoGrouping() {
-        if (!this.grouping) return
-        this.grouping = false
-        if (this.isGrouping()) {
-            this.pushToHistory(this.currentGroup)
-            this.currentGroup = ''
-        }
-    }
-
-    undo(): string | null {
-        if (this.currentIndex > 0) {
-            this.currentIndex--
-            return this.getLastHistory()
-        }
-        return null
-    }
-
-    redo(): string | null {
-        if (this.currentIndex < this.history.length - 1) {
-            this.currentIndex++
-            return this.getLastHistory()
-        }
-        return null
-    }
 }
 
 export class TextInput {
@@ -374,13 +301,13 @@ export class TextInput {
         if (value && !this.disabled) {
             this.isFocused = true
             this.blinkTimer = this.settings.caretBlinkRate
-            this.undoManager.beginUndoGrouping()
+            this.undoManager.beginGrouping()
             this.settings.focusCallback(true)
         } else {
             this.onStartOfSelection()
             this.resetAssembleMode()
             this.resetSelectionPos()
-            this.undoManager.endUndoGrouping()
+            this.undoManager.endGrouping()
             this.isFocused = false
             this.settings.focusCallback(false)
         }
@@ -802,8 +729,8 @@ export class TextInput {
             this.handleNonHangul(before, newValue, after)
         }
 
-        this.undoManager.beginUndoGrouping()
-        this.undoManager.registerUndo(this.value)
+        this.undoManager.beginGrouping()
+        this.undoManager.registerUndoAction(this.value)
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -1231,7 +1158,7 @@ export class TextInput {
         this.text = this.undoManager.redo() ?? ''
         this.onEndOfSelection()
         this.resetAssembleMode()
-        this.undoManager.endUndoGrouping()
+        this.undoManager.endGrouping()
     }
 
     private handleUndo() {
@@ -1243,7 +1170,7 @@ export class TextInput {
         this.text = this.undoManager.undo() ?? ''
         this.onEndOfSelection()
         this.resetAssembleMode()
-        this.undoManager.endUndoGrouping()
+        this.undoManager.endGrouping()
     }
 
     private getSelectionOutside(): [string, string] {
