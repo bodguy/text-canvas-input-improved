@@ -163,7 +163,7 @@ export class TextInput {
     private wasOver: boolean
     private settings: typeof TextInput.defaultSettings
     private hangulMode: boolean
-    private undoManager: UndoManager
+    private undoManager: UndoManager<string>
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -179,12 +179,11 @@ export class TextInput {
         this.wasOver = false
         this.hangulMode = false
         this.undoManager = new UndoManager()
+        this.undoManager.registerUndoAction('')
         this.undoManager.onUndo = (value: string) => {
-            console.log(value)
             this.text = value
         }
         this.undoManager.onRedo = (value: string) => {
-            console.log(value)
             this.text = value
         }
 
