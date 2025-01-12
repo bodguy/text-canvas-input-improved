@@ -179,6 +179,14 @@ export class TextInput {
         this.wasOver = false
         this.hangulMode = false
         this.undoManager = new UndoManager()
+        this.undoManager.onUndo = (value: string) => {
+            console.log(value)
+            this.text = value
+        }
+        this.undoManager.onRedo = (value: string) => {
+            console.log(value)
+            this.text = value
+        }
 
         document.addEventListener('keydown', this.onKeyDown.bind(this))
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true)
@@ -729,7 +737,6 @@ export class TextInput {
             this.handleNonHangul(before, newValue, after)
         }
 
-        this.undoManager.beginGrouping()
         this.undoManager.registerUndoAction(this.value)
     }
 
@@ -1155,10 +1162,9 @@ export class TextInput {
             return
         }
 
-        this.text = this.undoManager.redo() ?? ''
+        this.undoManager.redo()
         this.onEndOfSelection()
         this.resetAssembleMode()
-        this.undoManager.endGrouping()
     }
 
     private handleUndo() {
@@ -1167,10 +1173,9 @@ export class TextInput {
             return
         }
 
-        this.text = this.undoManager.undo() ?? ''
+        this.undoManager.undo()
         this.onEndOfSelection()
         this.resetAssembleMode()
-        this.undoManager.endGrouping()
     }
 
     private getSelectionOutside(): [string, string] {

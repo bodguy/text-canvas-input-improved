@@ -1,70 +1,29 @@
 class UndoAction {
-    target: any
-    func: (...args: any[]) => void
-    arg: any[]
-    data: any
+    data: string
     parentGroup: ActionGroup | null = null
-    onperform: ((action: UndoAction) => void) | null = null
+    onPerform: ((action: UndoAction) => void) | null = null
 
-    constructor(target: any, func: (...args: any[]) => void, arg: any[], data: any) {
-        this.target = target
-        this.func = func
-        this.arg = arg
+    constructor(data: string) {
         this.data = data
     }
 
     perform(): void {
-        this.func.apply(this.target, this.arg)
-        if (typeof this.onperform === 'function') {
-            this.onperform(this)
-        }
+        this.onPerform(this)
     }
 }
 
 class ActionGroup {
-    actions: (UndoAction | ActionGroup)[] = []
-    mode: string
-    parentGroup: ActionGroup | null = null
+    actions: (UndoAction | ActionGroup)[]
+    parentGroup: ActionGroup | null
 
-    constructor(mode: string = UndoManager.COALESCE_MODE.NONE) {
-        this.mode = mode
+    constructor() {
+        this.actions = []
+        this.parentGroup = null
     }
 
     addAction(action: UndoAction): void {
         action.parentGroup = this
-
-        switch (this.mode) {
-            case UndoManager.COALESCE_MODE.FIRST:
-                if (this.actions.length === 0) {
-                    this.actions.push(action)
-                }
-                break
-
-            case UndoManager.COALESCE_MODE.LAST:
-                this.actions[0] = action
-                break
-
-            case UndoManager.COALESCE_MODE.CONSECUTIVE_DUPLICATES:
-                if (
-                    this.actions.length === 0 ||
-                    action.func !== (this.actions[this.actions.length - 1] as UndoAction).func
-                ) {
-                    this.actions.push(action)
-                }
-                break
-
-            case UndoManager.COALESCE_MODE.DUPLICATES:
-                for (let i = this.actions.length - 1; i >= 0; i--) {
-                    if ((this.actions[i] as UndoAction).func === action.func) {
-                        this.actions.push(action)
-                        break
-                    }
-                }
-                break
-
-            default:
-                this.actions.push(action)
-        }
+        this.actions.push(action)
     }
 
     addGroup(actionGroup: ActionGroup): void {
@@ -80,14 +39,6 @@ class ActionGroup {
 }
 
 class UndoManager {
-    static COALESCE_MODE = {
-        NONE: 'none',
-        FIRST: 'first',
-        LAST: 'last',
-        CONSECUTIVE_DUPLICATES: 'concecutiveDuplicates',
-        DUPLICATES: 'duplicates'
-    }
-
     private STATE_COLLECTING_ACTIONS = 'collectingActions'
     private STATE_UNDOING = 'undoing'
     private STATE_REDOING = 'redoing'
@@ -100,9 +51,8 @@ class UndoManager {
     private _groupLevel = 0
     private _maxUndoLevels: number | null = null
 
-    onundo: ((data: { data: any; manager: UndoManager }) => void) | null = null
-    onredo: ((data: { data: any; manager: UndoManager }) => void) | null = null
-    onchange: ((manager: UndoManager) => void) | null = null
+    onUndo: ((value: string) => void) | null = null
+    onRedo: ((value: string) => void) | null = null
 
     setMaxUndoLevels(levels: number | null): void {
         this._maxUndoLevels = levels
@@ -135,8 +85,7 @@ class UndoManager {
     }
 
     undo(): void {
-        if (!this.canUndo())
-            throw new Error('Cannot undo, no undo actions on the stack or undo/redo operation in progress.')
+        if (!this.canUndo()) return
 
         this.endGrouping()
         this._state = this.STATE_UNDOING
@@ -146,13 +95,10 @@ class UndoManager {
         this.endGrouping()
 
         this._state = this.STATE_COLLECTING_ACTIONS
-
-        this._dispatch(this.onchange, { manager: this })
     }
 
     redo(): void {
-        if (!this.canRedo())
-            throw new Error('Cannot redo, no redo actions on the stack or undo/redo operation in progress.')
+        if (!this.canRedo()) return
 
         this._state = this.STATE_REDOING
 
@@ -161,17 +107,11 @@ class UndoManager {
         this.endGrouping()
 
         this._state = this.STATE_COLLECTING_ACTIONS
-
-        this._dispatch(this.onchange, { manager: this })
     }
 
-    registerUndoAction(target: any, func: (...args: any[]) => void, arg: any[], data: any): void {
-        if (typeof func !== 'function') {
-            throw new TypeError(`Expected func to be of type function. ${typeof func} given.`)
-        }
-
-        const action = new UndoAction(target, func, arg, data)
-        action.onperform = this._onActionPerform.bind(this)
+    registerUndoAction(data: string): void {
+        const action = new UndoAction(data)
+        action.onPerform = this._onActionPerform.bind(this)
 
         if (this._groupLevel !== 0) {
             this._openGroupRef?.addAction(action)
@@ -190,12 +130,10 @@ class UndoManager {
         if (this._state === this.STATE_COLLECTING_ACTIONS) {
             this.clearRedo()
         }
-
-        this._dispatch(this.onchange, { manager: this })
     }
 
-    beginGrouping(mode: string = UndoManager.COALESCE_MODE.NONE): void {
-        const newGroup = new ActionGroup(mode)
+    beginGrouping(): void {
+        const newGroup = new ActionGroup()
 
         if (this._groupLevel === 0) {
             if (this._state === this.STATE_UNDOING) {
@@ -225,12 +163,10 @@ class UndoManager {
 
     clearRedo(): void {
         this.redoStack = []
-        this._dispatch(this.onchange, { manager: this })
     }
 
     clearUndo(): void {
         this.undoStack = []
-        this._dispatch(this.onchange, { manager: this })
     }
 
     private _wrappedAction(action: UndoAction): ActionGroup {
@@ -239,14 +175,9 @@ class UndoManager {
         return group
     }
 
-    private _dispatch(callback: Function | null, arg: any): void {
-        if (typeof callback === 'function') callback(arg)
-    }
-
     private _onActionPerform(action: UndoAction): void {
-        const callbackData = { data: action.data, manager: this }
-        const callback = this._state === this.STATE_UNDOING ? this.onundo : this.onredo
-        this._dispatch(callback, callbackData)
+        const callback = this._state === this.STATE_UNDOING ? this.onUndo : this.onRedo
+        callback(action.data)
     }
 }
 
