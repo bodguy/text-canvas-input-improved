@@ -1,9 +1,9 @@
-class UndoAction {
-    data: string
-    parentGroup: ActionGroup | null = null
-    onPerform: ((action: UndoAction) => void) | null = null
+class UndoAction<T> {
+    data: T
+    parentGroup: ActionGroup<T> | null = null
+    onPerform: ((action: UndoAction<T>) => void) | null = null
 
-    constructor(data: string) {
+    constructor(data: T) {
         this.data = data
     }
 
@@ -12,21 +12,21 @@ class UndoAction {
     }
 }
 
-class ActionGroup {
-    actions: (UndoAction | ActionGroup)[]
-    parentGroup: ActionGroup | null
+class ActionGroup<T> {
+    actions: (UndoAction<T> | ActionGroup<T>)[]
+    parentGroup: ActionGroup<T> | null
 
     constructor() {
         this.actions = []
         this.parentGroup = null
     }
 
-    addAction(action: UndoAction): void {
+    addAction(action: UndoAction<T>): void {
         action.parentGroup = this
         this.actions.push(action)
     }
 
-    addGroup(actionGroup: ActionGroup): void {
+    addGroup(actionGroup: ActionGroup<T>): void {
         actionGroup.parentGroup = this
         this.actions.push(actionGroup)
     }
@@ -38,21 +38,21 @@ class ActionGroup {
     }
 }
 
-class UndoManager {
+class UndoManager<T> {
     private STATE_COLLECTING_ACTIONS = 'collectingActions'
     private STATE_UNDOING = 'undoing'
     private STATE_REDOING = 'redoing'
 
-    private undoStack: ActionGroup[] = []
-    private redoStack: ActionGroup[] = []
+    undoStack: ActionGroup<T>[] = []
+    redoStack: ActionGroup<T>[] = []
     private _state = this.STATE_COLLECTING_ACTIONS
 
-    private _openGroupRef: ActionGroup | null = null
+    private _openGroupRef: ActionGroup<T> | null = null
     private _groupLevel = 0
     private _maxUndoLevels: number | null = null
 
-    onUndo: ((value: string) => void) | null = null
-    onRedo: ((value: string) => void) | null = null
+    onUndo: ((value: T) => void) | null = null
+    onRedo: ((value: T) => void) | null = null
 
     setMaxUndoLevels(levels: number | null): void {
         this._maxUndoLevels = levels
@@ -74,14 +74,6 @@ class UndoManager {
 
     canRedo(): boolean {
         return this.redoStack.length > 0 && this._state === this.STATE_COLLECTING_ACTIONS
-    }
-
-    getUndoActionsCount(): number {
-        return this.undoStack.length
-    }
-
-    getRedoActionsCount(): number {
-        return this.redoStack.length
     }
 
     undo(): void {
@@ -109,7 +101,7 @@ class UndoManager {
         this._state = this.STATE_COLLECTING_ACTIONS
     }
 
-    registerUndoAction(data: string): void {
+    registerUndoAction(data: T): void {
         const action = new UndoAction(data)
         action.onPerform = this._onActionPerform.bind(this)
 
@@ -133,7 +125,7 @@ class UndoManager {
     }
 
     beginGrouping(): void {
-        const newGroup = new ActionGroup()
+        const newGroup = new ActionGroup<T>()
 
         if (this._groupLevel === 0) {
             if (this._state === this.STATE_UNDOING) {
@@ -169,13 +161,13 @@ class UndoManager {
         this.undoStack = []
     }
 
-    private _wrappedAction(action: UndoAction): ActionGroup {
-        const group = new ActionGroup()
+    private _wrappedAction(action: UndoAction<T>): ActionGroup<T> {
+        const group = new ActionGroup<T>()
         group.addAction(action)
         return group
     }
 
-    private _onActionPerform(action: UndoAction): void {
+    private _onActionPerform(action: UndoAction<T>): void {
         const callback = this._state === this.STATE_UNDOING ? this.onUndo : this.onRedo
         callback(action.data)
     }
