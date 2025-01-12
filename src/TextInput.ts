@@ -181,9 +181,11 @@ export class TextInput {
         this.undoManager = new UndoManager()
         this.undoManager.registerUndoAction('')
         this.undoManager.onUndo = (value: string) => {
+            console.log(value)
             this.text = value
         }
         this.undoManager.onRedo = (value: string) => {
+            console.log(value)
             this.text = value
         }
 
@@ -1172,7 +1174,9 @@ export class TextInput {
             return
         }
 
+        this.undoManager.endGrouping()
         this.undoManager.undo()
+        this.undoManager.beginGrouping()
         this.onEndOfSelection()
         this.resetAssembleMode()
     }
