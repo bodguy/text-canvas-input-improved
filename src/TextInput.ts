@@ -1,4 +1,5 @@
 import * as Hangul from 'hangul-js'
+import { UndoManager } from '@/UndoManager'
 
 export type TextInputSettings = {
     font: string
@@ -27,117 +28,6 @@ export type TextInputSettings = {
     enterCallback: (event: KeyboardEvent) => void
     hoverCallback: (inOut: boolean) => void
     focusCallback: (inOut: boolean) => void
-}
-
-class UndoManager {
-    private levelsOfUndo: number
-    private groupsByEvent: boolean // Determines if events are grouped by default
-    private grouping: boolean // Indicates if grouping is currently active
-    private currentGroup: string[] // Holds states temporarily during grouping
-    private undoStack: (string | string[])[]
-    private redoStack: (string | string[])[]
-
-    constructor(levelsOfUndo: number = 50) {
-        this.levelsOfUndo = levelsOfUndo
-        this.groupsByEvent = true
-        this.grouping = false
-        this.currentGroup = []
-        this.undoStack = []
-        this.redoStack = []
-    }
-
-    registerUndo(state: string): void {
-        // Avoid saving the same state consecutively
-        if (state === '' || this.getLastUndo() === state) return
-
-        if (this.grouping) {
-            // If grouping is active, add the state to the current group
-            this.currentGroup.push(state)
-        } else {
-            // Add individual state to the undo stack
-            this.pushToUndoStack(state)
-        }
-
-        // Clear redo stack whenever a new state is saved
-        this.redoStack = []
-    }
-
-    private pushToUndoStack(state: string | string[]): void {
-        if (this.groupsByEvent && Array.isArray(state) && state.length === 1) {
-            state = state[0]; // Simplify groups of size 1
-        }
-
-        this.undoStack.push(state)
-
-        if (this.undoStack.length > this.levelsOfUndo) {
-            this.undoStack.shift() // Remove the oldest state/group
-        }
-    }
-
-    private getLastUndo(): string | null {
-        const previous = this.undoStack[this.undoStack.length - 1]
-        if (Array.isArray(previous)) {
-            return previous[previous.length - 1]
-        }
-        return previous ?? null
-    }
-
-    get canUndo(): boolean {
-        return this.undoStack.length > 0
-    }
-
-    get canRedo(): boolean {
-        return this.redoStack.length > 0
-    }
-
-    isGrouping(): boolean {
-        return this.currentGroup.length > 0
-    }
-
-    beginUndoGrouping() {
-        this.grouping = true
-        this.currentGroup = []
-    }
-
-    endUndoGrouping() {
-        if (!this.grouping) return
-        this.grouping = false
-        if (this.isGrouping()) {
-            this.pushToUndoStack([...this.currentGroup])
-            this.currentGroup = []
-        }
-    }
-
-    undo(): string | null {
-        if (!this.canUndo) return null
-
-        const previous = this.undoStack.pop()
-        if (previous) {
-            this.redoStack.push(previous)
-            if (Array.isArray(previous)) {
-                return previous[previous.length - 1]
-            }
-            return previous
-        }
-
-        return null
-    }
-
-    redo(): string | null {
-        if (!this.canRedo) return null
-
-        const next = this.redoStack.pop()
-        if (next) {
-            this.undoStack.push(next)
-
-            if (Array.isArray(next)) {
-                return next[next.length - 1]
-            }
-            return next
-        }
-
-        return null
-    }
 }
 
 export class TextInput {
@@ -273,7 +163,7 @@ export class TextInput {
     private wasOver: boolean
     private settings: typeof TextInput.defaultSettings
     private hangulMode: boolean
-    private undoManager: UndoManager
+    private undoManager: UndoManager<string>
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -289,6 +179,13 @@ export class TextInput {
         this.wasOver = false
         this.hangulMode = false
         this.undoManager = new UndoManager()
+        this.undoManager.registerUndoAction('')
+        this.undoManager.onUndo = (value: string) => {
+            this.text = value
+        }
+        this.undoManager.onRedo = (value: string) => {
+            this.text = value
+        }
 
         document.addEventListener('keydown', this.onKeyDown.bind(this))
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true)
@@ -411,11 +308,13 @@ export class TextInput {
         if (value && !this.disabled) {
             this.isFocused = true
             this.blinkTimer = this.settings.caretBlinkRate
+            this.undoManager.beginGrouping()
             this.settings.focusCallback(true)
         } else {
             this.onStartOfSelection()
             this.resetAssembleMode()
             this.resetSelectionPos()
+            this.undoManager.endGrouping()
             this.isFocused = false
             this.settings.focusCallback(false)
         }
@@ -836,6 +735,8 @@ export class TextInput {
             // Handle non-Hangul input
             this.handleNonHangul(before, newValue, after)
         }
+
+        this.undoManager.registerUndoAction(this.value)
     }
 
     private handleHangul(beforeValue: string, newValue: string, afterValue: string) {
@@ -1218,11 +1119,7 @@ export class TextInput {
             }
 
             // Check the right side
-            if (
-                right < this.getLength() &&
-                end === this.getLength() &&
-                this.isStopWord(right, isNonAsciiStart)
-            ) {
+            if (right < this.getLength() && end === this.getLength() && this.isStopWord(right, isNonAsciiStart)) {
                 end = right
             }
 
@@ -1259,21 +1156,25 @@ export class TextInput {
     }
 
     private handleRedo() {
-        const redo = this.undoManager.redo()
-        if (redo !== null) {
-            this.text = redo
-            this.onEndOfSelection()
+        if (this.isAssembleMode()) {
             this.resetAssembleMode()
+            return
         }
+
+        this.undoManager.redo()
+        this.onEndOfSelection()
+        this.resetAssembleMode()
     }
 
     private handleUndo() {
-        const undo = this.undoManager.undo()
-        if (undo !== null) {
-            this.text = undo
-            this.onEndOfSelection()
+        if (this.isAssembleMode()) {
             this.resetAssembleMode()
+            return
         }
+
+        this.undoManager.undo()
+        this.onEndOfSelection()
+        this.resetAssembleMode()
     }
 
     private getSelectionOutside(): [string, string] {
