@@ -23,7 +23,7 @@ class ActionGroup<T> {
 
     addAction(action: UndoAction<T>): void {
         action.parentGroup = this
-        this.actions.push(action)
+        this.actions[0] = action
     }
 
     addGroup(actionGroup: ActionGroup<T>): void {
