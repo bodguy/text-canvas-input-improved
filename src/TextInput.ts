@@ -1215,6 +1215,7 @@ export class TextInput {
 
     private expandRemainRange(pos: number): [number, number] {
         const startChar = this.at(pos)
+        if (!startChar) return [pos, pos]
 
         if (this.isDelimiter(startChar)) {
             return this.expandDelimiterRange(pos)

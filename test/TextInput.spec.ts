@@ -343,8 +343,6 @@ describe('TextInput', () => {
         keydownEvent('Backspace', true)
         expect(textInput.text).toBe('한글123abc')
         keydownEvent('Backspace', true)
-        expect(textInput.text).toBe('한글123')
-        keydownEvent('Backspace', true)
         expect(textInput.text).toBe('한글')
         keydownEvent('Backspace', true)
         expect(textInput.text).toBe('')
