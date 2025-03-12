@@ -1119,39 +1119,38 @@ export class TextInput {
         this.handleNonHangul(before, text, after)
     }
 
-    private getStopWordRange(pos: number): [number, number] {
+    private expandDelimiterRange(pos: number): [number, number] {
+        // Expand the range for consecutive *same-type* delimiters
         const startChar = this.at(pos)
-        if (!startChar) return [pos, pos]
-
-        if (this.isDelimiter(startChar)) {
-            // Expand the range for consecutive *same-type* delimiters
-            let start = pos
-            let end = pos + 1
-            while (start > 0 && this.isDelimiter(this.at(start - 1)) && this.at(start - 1) === startChar) {
-                start--
-            }
-            while (end < this.getLength() && this.isDelimiter(this.at(end)) && this.at(end) === startChar) {
-                end++
-            }
-
-            return [start, end]
+        let start = pos
+        let end = pos + 1
+        while (start > 0 && this.isDelimiter(this.at(start - 1)) && this.at(start - 1) === startChar) {
+            start--
+        }
+        while (end < this.getLength() && this.isDelimiter(this.at(end)) && this.at(end) === startChar) {
+            end++
         }
 
-        if (this.isNotCompleteHangul(startChar)) {
-            // Expand the range for consecutive not complete hangul
-            let start = pos
-            let end = pos + 1
-            while (start > 0 && this.isNotCompleteHangul(this.at(start - 1))) {
-                start--
-            }
-            while (end < this.getLength() && this.isNotCompleteHangul(this.at(end))) {
-                end++
-            }
+        return [start, end]
+    }
 
-            return [start, end]
+    private expandNotCompleteHangulRange(pos: number): [number, number] {
+        // Expand the range for consecutive not complete hangul
+        let start = pos
+        let end = pos + 1
+        while (start > 0 && this.isNotCompleteHangul(this.at(start - 1))) {
+            start--
+        }
+        while (end < this.getLength() && this.isNotCompleteHangul(this.at(end))) {
+            end++
         }
 
+        return [start, end]
+    }
+
+    private expandWordRange(pos: number): [number, number] {
         // Iterate outward from `pos` in both directions
+        const startChar = this.at(pos)
         let start = 0
         let end = this.getLength()
         const isNonAsciiStart = this.isHangul(startChar)
@@ -1181,6 +1180,21 @@ export class TextInput {
         }
 
         return [start, end]
+    }
+
+    private getStopWordRange(pos: number): [number, number] {
+        const startChar = this.at(pos)
+        if (!startChar) return [pos, pos]
+
+        if (this.isDelimiter(startChar)) {
+            return this.expandDelimiterRange(pos)
+        }
+
+        if (this.isNotCompleteHangul(startChar)) {
+            return this.expandNotCompleteHangulRange(pos)
+        }
+
+        return this.expandWordRange(pos)
     }
 
     private isStopWord(i: number, isNonAsciiStart: boolean): boolean {
