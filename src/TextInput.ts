@@ -1123,15 +1123,38 @@ export class TextInput {
         // Expand the range for consecutive *same-type* delimiters
         const startChar = this.at(pos)
         let start = pos
-        let end = pos + 1
+        let end = pos
+
         while (start > 0 && this.isDelimiter(this.at(start - 1)) && this.at(start - 1) === startChar) {
             start--
         }
+
         while (end < this.getLength() && this.isDelimiter(this.at(end)) && this.at(end) === startChar) {
             end++
         }
 
         return [start, end]
+    }
+
+    private expandSpaceRange(pos: number): [number, number] {
+        // Handle spaces expanding to the next word but NOT the second word
+        let start = pos;
+        let end = pos;
+
+        // Move left if there are consecutive spaces
+        while (start > 0 && this.at(start - 1) === ' ') {
+            start--;
+        }
+
+        // Move right through spaces
+        while (end < this.getLength() && this.at(end) === ' ') {
+            end++;
+        }
+
+        start = this.expandRemainRange(start - 1)[0]
+        end = this.expandRemainRange(end)[1]
+
+        return [start, end];
     }
 
     private expandNotCompleteHangulRange(pos: number): [number, number] {
@@ -1183,6 +1206,14 @@ export class TextInput {
     }
 
     private getStopWordRange(pos: number): [number, number] {
+        const startChar = this.at(pos)
+        if (!startChar) return [pos, pos]
+
+        // handle space character special case
+        return startChar === ' ' ? this.expandSpaceRange(pos) : this.expandRemainRange(pos)
+    }
+
+    private expandRemainRange(pos: number): [number, number] {
         const startChar = this.at(pos)
         if (!startChar) return [pos, pos]
 
