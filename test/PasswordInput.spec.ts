@@ -35,7 +35,7 @@ describe('PasswordInput', () => {
         // expect(passwordInput.getSelection()).toStrictEqual([0, passwordInput.getLength()])
     })
 
-    it('should delete backward stop position when pressing Alt + Delete', () => {
+    it('should delete all when pressing Alt + Delete', () => {
         passwordInput.text = '한글 abcdㅁㄴㅁ!!!@@'
         keydownEvent('Home')
         keydownEvent('Delete', true)

@@ -1134,6 +1134,32 @@ export class TextInput {
         return [start, end]
     }
 
+    private expandSpaceRange(pos: number): [number, number] {
+        // Handle spaces expanding to the next word but NOT the second word
+        let start = pos;
+        let end = pos;
+
+        // Move left if there are consecutive spaces
+        while (start > 0 && this.at(start - 1) === ' ') {
+            start--;
+        }
+
+        // Extend to the *previous* word but stop at the previous space
+        // TODO
+
+        // Move right through spaces
+        while (end < this.getLength() && this.at(end) === ' ') {
+            end++;
+        }
+
+        // Extend to the *next* word but stop at the next space
+        while (end < this.getLength() && !this.isDelimiter(this.at(end)) && this.at(end) !== ' ') {
+            end++;
+        }
+
+        return [start, end];
+    }
+
     private expandNotCompleteHangulRange(pos: number): [number, number] {
         // Expand the range for consecutive not complete hangul
         let start = pos
@@ -1186,8 +1212,13 @@ export class TextInput {
         const startChar = this.at(pos)
         if (!startChar) return [pos, pos]
 
-        if (this.isDelimiter(startChar)) {
+        if (this.isDelimiter(startChar) && startChar !== ' ') {
             return this.expandDelimiterRange(pos)
+        }
+
+        // handle space character special case
+        if (startChar === ' ') {
+            return this.expandSpaceRange(pos)
         }
 
         if (this.isNotCompleteHangul(startChar)) {
