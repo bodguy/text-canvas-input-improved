@@ -721,7 +721,7 @@ export class TextInput {
             return true
         }
 
-        return false
+        return metaKey
     }
 
     private handleTypedText(keyEvent: KeyboardEvent) {
