@@ -248,18 +248,18 @@ export class TextInput {
         document.addEventListener('cut', (e) => this.onCut.call(this, e))
     }
 
-    private getValueIndexByWidth(w: number): number {
-        let width = 0
-        let i = 0
-        for (; i < this.value.length; i++) {
-            width += this.measureText(this.value[i])
+    private getValueIndexByWidth(targetWidth: number): number {
+        let accumulatedWidth = 0
 
-            if (width > w) {
-                break
+        for (let i = 0; i < this.value.length; i++) {
+            accumulatedWidth += this.measureText(this.value[i])
+
+            if (accumulatedWidth > targetWidth) {
+                return i + 1
             }
         }
 
-        return i + 1
+        return this.value.length + 1
     }
 
     draw() {
@@ -1157,23 +1157,23 @@ export class TextInput {
 
     private expandSpaceRange(pos: number): [number, number] {
         // Handle spaces expanding to the next word but NOT the second word
-        let start = pos;
-        let end = pos;
+        let start = pos
+        let end = pos
 
         // Move left if there are consecutive spaces
         while (start > 0 && this.at(start - 1) === ' ') {
-            start--;
+            start--
         }
 
         // Move right through spaces
         while (end < this.getLength() && this.at(end) === ' ') {
-            end++;
+            end++
         }
 
         start = this.expandRemainRange(start - 1)[0]
         end = this.expandRemainRange(end)[1]
 
-        return [start, end];
+        return [start, end]
     }
 
     private expandNotCompleteHangulRange(pos: number): [number, number] {
@@ -1207,11 +1207,7 @@ export class TextInput {
             }
 
             // Check the right side
-            if (
-                right < this.getLength() &&
-                end === this.getLength() &&
-                this.isStopWord(right, isNonAsciiStart)
-            ) {
+            if (right < this.getLength() && end === this.getLength() && this.isStopWord(right, isNonAsciiStart)) {
                 end = right
             }
 
