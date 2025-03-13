@@ -1207,7 +1207,11 @@ export class TextInput {
             }
 
             // Check the right side
-            if (right < this.getLength() && end === this.getLength() && this.isStopWord(right, isNonAsciiStart)) {
+            if (
+                right < this.getLength() &&
+                end === this.getLength() &&
+                this.isStopWord(right, isNonAsciiStart)
+            ) {
                 end = right
             }
 
