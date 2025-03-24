@@ -15,7 +15,7 @@
     "build": "tsc && vite build",
     "predeploy": "pnpm build",
     "deploy": "gh-pages -d dist",
-    "test": "vitest run",
+    "test": "CPUS=$(if uname -s | grep -q Darwin; then sysctl -n hw.ncpu; else nproc --all; fi); export VITEST_MAX_THREADS=$(($CPUS - 2)); export VITEST_MIN_THREADS=$(($CPUS - 2)); vitest run --coverage.enabled true",
     "coverage": "vitest run --coverage",
     "code:lint": "biome format . --write"
   },
