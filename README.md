@@ -1,5 +1,10 @@
 # Text canvas input improved
 
+
+[![Build status](https://github.com/bodguy/text-canvas-input-improved/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bodguy/text-canvas-input-improved/actions/workflows/ci.yml/badge.svg?branch=main)
+[![Coverage Status](https://bodguy.github.io/text-canvas-input-improved/badges/coverage.svg)](https://github.com/bodguy/text-canvas-input-improved/actions)
+![GitHub last commit](https://img.shields.io/github/last-commit/bodguy/text-canvas-input-improved)
+
 ![Alt text](./meta/sample.png "Title")
 
 canvas based text input field improved.
