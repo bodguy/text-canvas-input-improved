@@ -248,6 +248,20 @@ export class TextInput {
         document.addEventListener('cut', (e) => this.onCut.call(this, e))
     }
 
+    private getValueIndexByWidth(targetWidth: number): number {
+        let accumulatedWidth = 0
+
+        for (let i = 0; i < this.value.length; i++) {
+            accumulatedWidth += this.measureText(this.value[i])
+
+            if (accumulatedWidth > targetWidth) {
+                return i + 1
+            }
+        }
+
+        return this.value.length + 1
+    }
+
     draw() {
         this.context.font = `${this.settings.fontSize}px ${this.settings.font}`
         this.context.textAlign = 'left'
@@ -292,9 +306,14 @@ export class TextInput {
 
         const [before, after] = this.getSelectionOutside()
         const selectionText = this.getSelectionText()
-        const beforeValue = this.getDrawText(before)
+        let beforeValue = this.getDrawText(before)
         const selectionValue = this.getDrawText(selectionText)
         const afterValue = this.getDrawText(after)
+        const beforeValueWidth = this.measureText(beforeValue)
+        const diff = beforeValueWidth - this.settings.bounds.w
+        if (diff > 0) {
+            beforeValue = beforeValue.substring(this.getValueIndexByWidth(diff))
+        }
 
         // before
         this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.fontColor
