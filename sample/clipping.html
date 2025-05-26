@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Canvas Input with Selection</title>
+  <style>
+    canvas { border: 1px solid #666; }
+  </style>
+</head>
+<body>
+  <canvas id="inputCanvas" width="400" height="50"></canvas>
+
+  <script>
+    const canvas = document.getElementById('inputCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 입력 박스 속성
+    const box = { x: 10, y: 10, width: 380, height: 30, padding: 5 };
+
+    // 상태
+    let text = '';
+    let caretPos = 0;
+    let scrollOffset = 0;
+    let selectionAnchor = null; // Shift 시작점
+    let selectionStart = 0;
+    let selectionEnd = 0;
+
+    // 폰트 세팅
+    ctx.font = '16px sans-serif';
+
+    window.addEventListener('keydown', (e) => {
+      const prevPos = caretPos;
+      let moved = false;
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        // 문자 입력
+        text = text.slice(0, caretPos) + e.key + text.slice(caretPos);
+        caretPos++;
+      } else if (e.key === 'Backspace') {
+        if (caretPos > 0) {
+          text = text.slice(0, caretPos - 1) + text.slice(caretPos);
+          caretPos--;
+        }
+      } else if (e.key === 'Delete') {
+        if (caretPos < text.length) {
+          text = text.slice(0, caretPos) + text.slice(caretPos + 1);
+        }
+      } else if (e.key === 'ArrowLeft') {
+        caretPos = Math.max(0, caretPos - 1);
+        moved = true;
+      } else if (e.key === 'ArrowRight') {
+        caretPos = Math.min(text.length, caretPos + 1);
+        moved = true;
+      } else {
+        return;
+      }
+
+      // Shift + 화살표: selection
+      if (e.shiftKey && moved) {
+        if (selectionAnchor === null) {
+          selectionAnchor = prevPos;
+        }
+        // 업데이트된 caretPos 기준
+        selectionStart = Math.min(selectionAnchor, caretPos);
+        selectionEnd   = Math.max(selectionAnchor, caretPos);
+      } else {
+        // Shift 미사용 또는 입력 발생: 선택 해제
+        selectionAnchor = null;
+        selectionStart = selectionEnd = caretPos;
+      }
+
+      adjustScroll();
+      draw();
+      e.preventDefault();
+    });
+
+    function adjustScroll() {
+      const beforeCaret = text.slice(0, caretPos);
+      const caretX = ctx.measureText(beforeCaret).width;
+      const visibleWidth = box.width - box.padding * 2;
+      const textWidth   = ctx.measureText(text).width;
+
+      // 텍스트 전체가 보이면 무조건 0
+      if (textWidth <= visibleWidth) {
+        scrollOffset = 0;
+        return;
+      }
+
+      if (caretX < scrollOffset) {
+        // 왼쪽 넘어감
+        scrollOffset = caretX;
+      } else if (caretX > scrollOffset + visibleWidth) {
+        // 오른쪽 넘어감
+        scrollOffset = caretX - visibleWidth;
+      }
+
+      // 범위 클램프
+      scrollOffset = Math.max(0, Math.min(scrollOffset, textWidth - visibleWidth));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 박스 배경
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(box.x, box.y, box.width, box.height);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+      // 클리핑 영역
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(
+        box.x + box.padding,
+        box.y + box.padding,
+        box.width - box.padding * 2,
+        box.height - box.padding * 2
+      );
+      ctx.clip();
+
+      ctx.textBaseline = 'top';
+      ctx.font = '16px sans-serif';
+
+      // 선택 영역 그리기
+      if (selectionStart !== selectionEnd) {
+        const startX = ctx.measureText(text.slice(0, selectionStart)).width;
+        const selWidth = ctx.measureText(text.slice(selectionStart, selectionEnd)).width;
+        ctx.fillStyle = 'rgba(0,120,215,0.3)';
+        ctx.fillRect(
+          box.x + box.padding - scrollOffset + startX,
+          box.y + box.padding,
+          selWidth,
+          box.height - box.padding * 2
+        );
+      }
+
+      // 텍스트 그리기
+      ctx.fillStyle = '#000';
+      ctx.fillText(
+        text,
+        box.x + box.padding - scrollOffset,
+        box.y + box.padding
+      );
+
+      // 캐럿 그리기
+      const caretX = ctx.measureText(text.slice(0, caretPos)).width;
+      const cx = box.x + box.padding + caretX - scrollOffset;
+      ctx.beginPath();
+      ctx.moveTo(cx, box.y + box.padding);
+      ctx.lineTo(cx, box.y + box.height - box.padding);
+      ctx.strokeStyle = '#000';
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // 초기 렌더링
+    draw();
+  </script>
+</body>
+</html>
