@@ -1068,6 +1068,23 @@ export class TextInput {
             return
         }
 
+        const area = this.area()
+        const boundX = mousePos.x - area.x;
+        const fullTextWidth = this.measureText(this.value);
+        const maxScroll = Math.max(0, fullTextWidth - area.w);
+        const oneCharWidth = this.measureText('W')
+        const leftThreshold  = 0 + oneCharWidth;
+        const rightThreshold = area.w - oneCharWidth;
+
+        if (fullTextWidth > area.w) {
+            if (boundX < leftThreshold) {
+                this.scrollOffset = this.scrollOffset + (boundX - leftThreshold);
+            } else if (boundX > rightThreshold) {
+                this.scrollOffset = this.scrollOffset + (boundX - rightThreshold);
+            }
+        }
+        this.scrollOffset = this.clamp(this.scrollOffset, 0, maxScroll)
+
         const curPos = this.textPos(mousePos.x, mousePos.y)
         const start = Math.min(this.selectionPos, curPos)
         const end = Math.max(this.selectionPos, curPos)
