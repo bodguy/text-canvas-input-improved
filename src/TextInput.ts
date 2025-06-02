@@ -222,6 +222,7 @@ export class TextInput {
     private settings: typeof TextInput.defaultSettings
     private hangulMode: boolean
     private undoManager: UndoManager
+    private scrollOffset: number
 
     constructor(settings: Partial<TextInputSettings>, canvas: HTMLCanvasElement) {
         this.canvas = canvas
@@ -237,6 +238,7 @@ export class TextInput {
         this.wasOver = false
         this.hangulMode = false
         this.undoManager = new UndoManager()
+        this.scrollOffset = 0
 
         document.addEventListener('keydown', this.onKeyDown.bind(this))
         this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this), true)
@@ -246,6 +248,32 @@ export class TextInput {
         document.addEventListener('copy', (e) => this.onCopy.call(this, e))
         document.addEventListener('paste', (e) => this.onPaste.call(this, e))
         document.addEventListener('cut', (e) => this.onCut.call(this, e))
+    }
+
+    private getVisibleWidth(): number {
+        return this.settings.bounds.w - this.settings.padding.left - this.settings.padding.right
+    }
+
+    private adjustScroll(): void {
+        const totalTextWidth = this.measureText(this.getDrawText(this.text))
+
+        const [_, selEnd] = this.getSelection()
+        const widthBeforeCaret = this.measureText(this.getSubText(0, selEnd))
+
+        const visibleWidth = this.getVisibleWidth()
+
+        if (totalTextWidth <= visibleWidth) {
+            this.scrollOffset = 0
+            return
+        }
+
+        if (widthBeforeCaret < this.scrollOffset) {
+            this.scrollOffset = widthBeforeCaret
+        } else if (widthBeforeCaret > this.scrollOffset + visibleWidth) {
+            this.scrollOffset = widthBeforeCaret - visibleWidth
+        }
+
+        this.scrollOffset = this.clamp(this.scrollOffset, 0, totalTextWidth - visibleWidth)
     }
 
     draw() {
@@ -275,17 +303,20 @@ export class TextInput {
 
         if (this.isFocused) {
             if (this.isSelected()) {
-                const selectOffset = this.measureText(
-                    this.getSubText(0, Math.min(this.selection[0], this.selection[1]))
-                )
+                const [selStart, selEnd] = this.getSelection()
+                const beforeSelWidth = this.measureText(this.getSubText(0, Math.min(selStart, selEnd)))
                 const selectWidth = this.measureText(this.getSelectionText())
+
                 this.context.fillStyle = this.settings.selectionColor
-                this.context.fillRect(selectOffset + x, y - 1, selectWidth, this.settings.fontSize + 3)
+                this.context.fillRect(x + beforeSelWidth - this.scrollOffset, y - 1, selectWidth, this.settings.fontSize + 3)
             } else {
                 if (this.cursorBlink()) {
-                    const cursorOffset = this.measureText(this.getSubText(0, this.selection[0]))
+                    const [selStart, _] = this.getSelection()
+                    const beforeCursorWidth = this.measureText(this.getSubText(0, selStart))
+
                     this.context.fillStyle = this.settings.fontColor
-                    this.context.fillRect(cursorOffset + x, y, 1, this.settings.fontSize)
+                    const posX = x + beforeCursorWidth - this.scrollOffset - this.settings.border.right - this.settings.padding.right
+                    this.context.fillRect(posX, y, 1, this.settings.fontSize)
                 }
             }
         }
@@ -296,25 +327,28 @@ export class TextInput {
         const selectionValue = this.getDrawText(selectionText)
         const afterValue = this.getDrawText(after)
 
+        const beforeTextWidth = this.measureText(beforeValue)
+        const selectionWidth = this.measureText(selectionText)
+
         // before
         this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.fontColor
-        this.context.fillText(beforeValue, x, textY)
+        this.context.fillText(beforeValue, x - this.scrollOffset, textY)
         // selection
         this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.selectionFontColor
-        this.context.fillText(selectionValue, x + this.measureText(before), textY)
+        this.context.fillText(selectionValue, x + beforeTextWidth - this.scrollOffset, textY)
         // after
         this.context.fillStyle = this.disabled ? this.settings.disabledFontColor : this.settings.fontColor
-        this.context.fillText(afterValue, x + this.measureText(before + selectionText), textY)
+        this.context.fillText(afterValue, x + beforeTextWidth + selectionWidth - this.scrollOffset, textY)
 
         // draw placeholder
         if (this.isEmpty()) {
             this.context.fillStyle = this.settings.placeHolderColor
-            this.context.fillText(this.settings.placeHolder, x, textY)
+            this.context.fillText(this.settings.placeHolder, x - this.scrollOffset, textY)
         }
 
         // draw underline to handle hangul assemble mode
         if (this.isFocused && this.isAssembleMode()) {
-            this.drawUnderline()
+            this.drawUnderline(x, y)
         }
 
         this.drawRect(area.x, area.y, area.w, area.h)
@@ -324,6 +358,7 @@ export class TextInput {
 
     update(deltaTime: number) {
         this.blinkTimer += deltaTime
+        this.adjustScroll()
     }
 
     isSelected(): boolean {
@@ -409,13 +444,12 @@ export class TextInput {
         return this.isPassword() ? this.settings.passwordChar.repeat(str.length) : str
     }
 
-    private drawUnderline() {
-        const x = this.getStartX()
-        const y = this.getStartY() + this.settings.fontSize - 2
+    private drawUnderline(x: number, y: number) {
+        const posY = y + this.settings.fontSize - 2
         this.context.fillStyle = this.settings.underlineColor
         const cursorOffset = this.measureText(this.getAssemblePosBefore())
         const singleCharWidth = this.measureText(this.getAssemblePosChar())
-        this.context.fillRect(cursorOffset + x, y, singleCharWidth, 2)
+        this.context.fillRect(cursorOffset + x - this.scrollOffset, posY, singleCharWidth, 2)
     }
 
     private getStartX(): number {
@@ -1297,7 +1331,10 @@ export class TextInput {
     private contains(x: number, y: number): boolean {
         const area = this.area()
         return (
-            x >= area.x && x <= this.settings.bounds.x + area.w && y >= area.y && y <= this.settings.bounds.y + area.h
+            x >= area.x && 
+            x <= this.settings.bounds.x + area.w && 
+            y >= area.y && 
+            y <= this.settings.bounds.y + area.h
         )
     }
 
