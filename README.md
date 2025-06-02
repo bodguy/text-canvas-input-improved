@@ -25,8 +25,6 @@ npm deploy
 
 ## TODO
 
-- text clip & viewport (텍스트내 보여줄 시작 위치)
-- 최대글자 한글조합중일때 버그
 - undo/redo
 
 ## DONE
@@ -51,3 +49,4 @@ npm deploy
 - Alt 지우기 핸들링
 - windows 플랫폼 이벤트 처리
 - stop word space inclusion
+- text clip & viewport (텍스트내 보여줄 시작 위치)
