@@ -204,9 +204,9 @@ export class TextInput {
             right: 3,
             bottom: 3
         },
-        enterCallback: (event: KeyboardEvent) => { },
-        hoverCallback: (inOut: boolean) => { },
-        focusCallback: (inOut: boolean) => { }
+        enterCallback: (event: KeyboardEvent) => {},
+        hoverCallback: (inOut: boolean) => {},
+        focusCallback: (inOut: boolean) => {}
     }
 
     private canvas: HTMLCanvasElement
@@ -308,14 +308,24 @@ export class TextInput {
                 const selectWidth = this.measureText(this.getSelectionText())
 
                 this.context.fillStyle = this.settings.selectionColor
-                this.context.fillRect(x + beforeSelWidth - this.scrollOffset, y - 1, selectWidth, this.settings.fontSize + 3)
+                this.context.fillRect(
+                    x + beforeSelWidth - this.scrollOffset,
+                    y - 1,
+                    selectWidth,
+                    this.settings.fontSize + 3
+                )
             } else {
                 if (this.cursorBlink()) {
                     const [selStart, _] = this.getSelection()
                     const beforeCursorWidth = this.measureText(this.getSubText(0, selStart))
 
                     this.context.fillStyle = this.settings.fontColor
-                    const posX = x + beforeCursorWidth - this.scrollOffset - this.settings.border.right - this.settings.padding.right
+                    const posX =
+                        x +
+                        beforeCursorWidth -
+                        this.scrollOffset -
+                        this.settings.border.right -
+                        this.settings.padding.right
                     this.context.fillRect(posX, y, 1, this.settings.fontSize)
                 }
             }
@@ -965,22 +975,22 @@ export class TextInput {
         let pos = this.getLength()
 
         const fullText = this.value
-        const fullTextWidth = this.measureText(fullText);
+        const fullTextWidth = this.measureText(fullText)
 
         if (effectiveX < fullTextWidth) {
-            totalWidth = 0;
+            totalWidth = 0
             for (let i = 0; i < this.getLength(); i++) {
-                const ch = this.at(i);
-                totalWidth += this.measureText(ch);
+                const ch = this.at(i)
+                totalWidth += this.measureText(ch)
 
                 if (totalWidth >= effectiveX) {
-                    pos = i;
-                    break;
+                    pos = i
+                    break
                 }
             }
         }
 
-        return pos;
+        return pos
     }
 
     private getMousePos(event: MouseEvent): { x: number; y: number } {
@@ -1069,18 +1079,19 @@ export class TextInput {
         }
 
         const area = this.area()
-        const boundX = mousePos.x - area.x;
-        const fullTextWidth = this.measureText(this.value);
-        const maxScroll = Math.max(0, fullTextWidth - area.w);
+        const boundX = mousePos.x - area.x
+        const fullTextWidth = this.measureText(this.value)
+        const maxScroll = Math.max(0, fullTextWidth - area.w)
         const oneCharWidth = this.measureText('W')
-        const leftThreshold  = 0 + oneCharWidth;
-        const rightThreshold = area.w - oneCharWidth;
 
         if (fullTextWidth > area.w) {
+            const leftThreshold = oneCharWidth
+            const rightThreshold = area.w - oneCharWidth
+
             if (boundX < leftThreshold) {
-                this.scrollOffset = this.scrollOffset + (boundX - leftThreshold);
+                this.scrollOffset = this.scrollOffset + (boundX - leftThreshold)
             } else if (boundX > rightThreshold) {
-                this.scrollOffset = this.scrollOffset + (boundX - rightThreshold);
+                this.scrollOffset = this.scrollOffset + (boundX - rightThreshold)
             }
         }
         this.scrollOffset = this.clamp(this.scrollOffset, 0, maxScroll)
@@ -1356,10 +1367,7 @@ export class TextInput {
     private contains(x: number, y: number): boolean {
         const area = this.area()
         return (
-            x >= area.x &&
-            x <= this.settings.bounds.x + area.w &&
-            y >= area.y &&
-            y <= this.settings.bounds.y + area.h
+            x >= area.x && x <= this.settings.bounds.x + area.w && y >= area.y && y <= this.settings.bounds.y + area.h
         )
     }
 
@@ -1370,8 +1378,8 @@ export class TextInput {
         this.context.strokeStyle = this.isFocused
             ? this.settings.focusBoxColor
             : this.disabled
-                ? this.settings.disabledBorderColor
-                : this.settings.boxColor
+              ? this.settings.disabledBorderColor
+              : this.settings.boxColor
 
         // left vertical line
         this.context.lineWidth = this.isFocused ? this.settings.focusBorder.left : this.settings.border.left
