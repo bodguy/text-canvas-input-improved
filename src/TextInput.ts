@@ -204,9 +204,9 @@ export class TextInput {
             right: 3,
             bottom: 3
         },
-        enterCallback: (event: KeyboardEvent) => {},
-        hoverCallback: (inOut: boolean) => {},
-        focusCallback: (inOut: boolean) => {}
+        enterCallback: (event: KeyboardEvent) => { },
+        hoverCallback: (inOut: boolean) => { },
+        focusCallback: (inOut: boolean) => { }
     }
 
     private canvas: HTMLCanvasElement
@@ -960,20 +960,27 @@ export class TextInput {
 
     private textPos(x: number, y: number) {
         const boundX = x - this.area().x
+        const effectiveX = boundX + this.scrollOffset
         let totalWidth = 0
         let pos = this.getLength()
 
-        if (boundX < this.measureText(this.value)) {
+        const fullText = this.value
+        const fullTextWidth = this.measureText(fullText);
+
+        if (effectiveX < fullTextWidth) {
+            totalWidth = 0;
             for (let i = 0; i < this.getLength(); i++) {
-                totalWidth += this.measureText(this.at(i))
-                if (totalWidth >= boundX) {
-                    pos = i
-                    break
+                const ch = this.at(i);
+                totalWidth += this.measureText(ch);
+
+                if (totalWidth >= effectiveX) {
+                    pos = i;
+                    break;
                 }
             }
         }
 
-        return pos
+        return pos;
     }
 
     private getMousePos(event: MouseEvent): { x: number; y: number } {
@@ -1044,6 +1051,7 @@ export class TextInput {
 
     private onMouseMove(event: MouseEvent) {
         const mousePos = this.getMousePos(event)
+
         if (this.contains(mousePos.x, mousePos.y) && !this.disabled) {
             this.settings.hoverCallback(true)
             this.canvas.style.cursor = 'text'
@@ -1331,9 +1339,9 @@ export class TextInput {
     private contains(x: number, y: number): boolean {
         const area = this.area()
         return (
-            x >= area.x && 
-            x <= this.settings.bounds.x + area.w && 
-            y >= area.y && 
+            x >= area.x &&
+            x <= this.settings.bounds.x + area.w &&
+            y >= area.y &&
             y <= this.settings.bounds.y + area.h
         )
     }
@@ -1345,8 +1353,8 @@ export class TextInput {
         this.context.strokeStyle = this.isFocused
             ? this.settings.focusBoxColor
             : this.disabled
-              ? this.settings.disabledBorderColor
-              : this.settings.boxColor
+                ? this.settings.disabledBorderColor
+                : this.settings.boxColor
 
         // left vertical line
         this.context.lineWidth = this.isFocused ? this.settings.focusBorder.left : this.settings.border.left
